@@ -1,3 +1,4 @@
+
 import { View,  Button } from "react-native";
 import { useRouter } from "expo-router";
 import { Text } from "@/components/ui/text";
@@ -11,7 +12,7 @@ export default function WelcomeScreen() {
   return (
     <View className="flex-1  items-center justify-center bg-white">
       <Text underline={true} className="text-xl font-bold text-blue-500">
-        Welcome to Nativewind!
+      Otra cosa
       </Text>
     </View>
   );

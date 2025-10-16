@@ -11,11 +11,16 @@ import {
 
 import { useColorScheme } from "react-native";
 
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import '@/global.css';
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   console.log(colorScheme)
   return (
-    <React.Fragment>
+    
+    <GluestackUIProvider mode="dark">
+      <React.Fragment>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen
@@ -25,5 +30,7 @@ export default function RootLayout() {
         </Stack>
       </ThemeProvider>
     </React.Fragment>
+    </GluestackUIProvider>
+  
   );
 }

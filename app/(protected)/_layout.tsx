@@ -11,7 +11,12 @@ export default function RootLayout() {
   }
   return (
     <React.Fragment>
-      <Stack />
+      <Stack>
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false }}
+        ></Stack.Screen>
+      </Stack>
     </React.Fragment>
   );
 }
