@@ -4,6 +4,7 @@ import useWelcomeStatus from "@/hooks/useStore";
 
 const LoggedIn = false;
 
+import { useQueryClient } from "@tanstack/react-query";
 export default function RootLayout() {
   const loffedIn = useWelcomeStatus((state) => state.entered);
   if (!loffedIn) {
