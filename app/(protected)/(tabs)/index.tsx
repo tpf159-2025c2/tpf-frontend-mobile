@@ -1,15 +1,11 @@
-import { View, FlatList } from "react-native";
-import { Button, ButtonText } from "@/components/ui/button";
-import { useRouter } from "expo-router";
-import { Text } from "@/components/ui/text";
+import { Button } from "react-native-paper";
+import useWelcomeStatus from "@/hooks/useStore";
 
 import { Home, GlobeIcon, PlayIcon, SettingsIcon } from "lucide-react-native";
-import Header from "@/components/header";
-import { Icon } from "@/components/ui/icon";
-import { MenuItemLabel, Menu, MenuItem } from "@/components/ui/menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import useWelcomeStatus from "@/hooks/useStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { View, FlatList, Text } from "react-native";
+import { useRouter } from "expo-router";
 
 let mockTodos = [
   { id: 1, title: "Learn React Query" },
@@ -62,9 +58,7 @@ function Todos() {
           })
         }
       >
-        <ButtonText>
-          {mutation.isPending ? "Adding..." : "Da sdjas dajisd a"}
-        </ButtonText>
+        {mutation.isPending ? "Adding..." : "Da sdjas dajisd a"}
       </Button>
     </View>
   );
@@ -76,15 +70,10 @@ export default function WelcomeScreen() {
   const setEntered = useWelcomeStatus((state) => state.setEntered);
 
   return (
-    <View
-      className="flex-1  items-center justify-center bg-white"
-      style={{ paddingTop: insets.top + 85 }}
-    >
-      <Text underline={true} className="text-xl font-bold text-blue-500">
-        Welcome to Nativewind!
-      </Text>
+    <View>
+      <Text>Welcome to Nativewind!</Text>
 
-      <Todos></Todos>
+      <Todos />
     </View>
   );
 }
