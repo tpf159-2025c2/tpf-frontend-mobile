@@ -35,7 +35,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           tabBarIcon: ({}) => <Icon source={"home"} size={25}></Icon>,
           title: "Asdasdasd",
@@ -45,7 +45,7 @@ export default function TabLayout() {
         name="welcome"
         options={{
           tabBarIcon: ({}) => <Icon source={"camera"} size={25}></Icon>,
-          title: "welcome",
+          title: "welcome"
         }}
       />
     </Tabs>
