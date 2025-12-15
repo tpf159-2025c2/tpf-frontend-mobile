@@ -17,23 +17,21 @@ export const lightTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#1E88E5", // blue 600
+    primary: "#1E88E5", 
     onPrimary: "#FFFFFF",
 
-    secondary: "#64B5F6", // light blue 300
+    secondary: "#64B5F6", 
     onSecondary: "#FFFFFF",
 
-    background: "#F4F9FF", // very light blue tint
+    background: "#F4F9FF", 
     surface: "#FFFFFF",
-    onSurface: "#0D1B2A", // dark text
-    surfaceVariant: "#E3F2FD", // soft blue surface
+    onSurface: "#0D1B2A",
+    surfaceVariant: "#E3F2FD", 
     outline: "#90CAF9",
 
-    // custom addition for modern contrast
     tertiary: "#42A5F5",
     onTertiary: "#FFFFFF",
 
-    // subtle elevation tones
     elevation: {
       level0: "transparent",
       level1: "#E3F2FD",
@@ -56,7 +54,7 @@ export const darkTheme = {
   ...MD3DarkTheme,
   colors: {
     ...MD3DarkTheme.colors,
-    primary: "#64B5F6", // lighter blue for dark bg
+    primary: "#64B5F6",
     onPrimary: "#0D1B2A",
 
     secondary: "#42A5F5",
