@@ -1,12 +1,6 @@
-import { Button, List } from "react-native-paper";
-import useWelcomeStatus from "@/hooks/useStore";
-import { ScrollView, Pressable } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-
-import { Home, GlobeIcon, PlayIcon, SettingsIcon } from "lucide-react-native";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { List } from "react-native-paper";
+import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { View } from "react-native";
@@ -15,72 +9,13 @@ import {
         Card,
         Avatar,
         Title,
-        Paragraph,
         useTheme,
 } from "react-native-paper";
-
-let mockTodos = [
-        { id: 1, title: "Learn React Query" },
-        { id: 2, title: "Build a cool RN app" },
-];
-
-function getMockTodos() {
-        return new Promise((resolve) => {
-                setTimeout(() => resolve(mockTodos), 500);
-        });
-}
-
-function addMockTodo(todo) {
-        return new Promise((resolve) => {
-                setTimeout(() => {
-                        mockTodos.push(todo);
-                        resolve(todo);
-                }, 300);
-        });
-}
-
-function Todos() {
-        const queryClient = useQueryClient();
-
-        const query = useQuery({ queryKey: ["todos"], queryFn: getMockTodos });
-
-        const mutation = useMutation({
-                mutationFn: addMockTodo,
-                onSuccess: () => {
-                        queryClient.invalidateQueries({ queryKey: ["todos"] });
-                },
-        });
-
-        if (query.isLoading) return <Text>Loading...</Text>;
-        if (query.isError) return <Text>Error loading todos</Text>;
-
-        return (
-                <View style={{ gap: 10, marginTop: 10 }}>
-                        <FlatList
-                                data={query.data}
-                                keyExtractor={(item) => item.id.toString()}
-                                renderItem={({ item }) => <Text>• {item.title}</Text>}
-                        />
-                        <Button
-                                disabled={mutation.isPending}
-                                onPress={() =>
-                                        mutation.mutate({
-                                                id: Date.now(),
-                                                title: "Do Laundry",
-                                        })
-                                }
-                        >
-                                {mutation.isPending ? "Adding..." : "Da sdjas dajisd a"}
-                        </Button>
-                </View>
-        );
-}
 export default function WelcomeScreen() {
         const insets = useSafeAreaInsets();
         const router = useRouter();
         const theme = useTheme();
 
-        const setEntered = useWelcomeStatus((state) => state.setEntered);
         const devices = [
                 {
                         id: "gas",
@@ -216,7 +151,7 @@ export default function WelcomeScreen() {
                                                                 style={{
                                                                         paddingVertical: 4,      // tighter vertical padding
                                                                         minHeight: 0,            // disable the big default min height
-                                                                        backgroundColor: "white",
+                                                                        backgroundColor: theme.colors.surface,
                                                                         borderRadius: 8,
                                                                         marginBottom: 4,         // less gap between items
                                                                 }}

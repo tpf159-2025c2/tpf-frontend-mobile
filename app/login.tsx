@@ -9,7 +9,7 @@ export default function WelcomeScreen() {
   const handleContinue = () => {
     console.log("Setting entered");
     setEntered(true);
-    router.replace("/");
+    router.replace("/(protected)/(tabs)/home");
   };
 
   return (
