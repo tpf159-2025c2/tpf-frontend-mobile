@@ -4,19 +4,20 @@ import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-pape
 import { useRouter } from 'expo-router';
 import useAuthStore from '@/hooks/useAuthStore';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [secureTextEntry, setSecureTextEntry] = useState(true);
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
+  const handleRegister = async () => {
+    if (!name.trim() || !email.trim() || !password.trim()) {
       setError('Por favor completa todos los campos');
       return;
     }
@@ -25,10 +26,10 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      await login({ email: email.trim(), password });
+      await register({ name: name.trim(), email: email.trim(), password });
       router.replace('/(protected)/(tabs)/houses');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesion');
+      setError(err instanceof Error ? err.message : 'Error al registrar usuario');
     } finally {
       setLoading(false);
     }
@@ -45,10 +46,10 @@ export default function LoginScreen() {
       >
         <View style={styles.card}>
           <Text variant="headlineMedium" style={styles.title}>
-            Bienvenido
+            Crear cuenta
           </Text>
           <Text variant="bodyMedium" style={styles.subtitle}>
-            Inicia sesion para continuar
+            Registrate para comenzar
           </Text>
 
           {error ? (
@@ -56,6 +57,17 @@ export default function LoginScreen() {
               {error}
             </HelperText>
           ) : null}
+
+          <TextInput
+            label="Nombre"
+            value={name}
+            onChangeText={setName}
+            mode="outlined"
+            autoCapitalize="words"
+            autoComplete="name"
+            disabled={loading}
+            style={styles.input}
+          />
 
           <TextInput
             label="Email"
@@ -88,29 +100,29 @@ export default function LoginScreen() {
 
           <Button
             mode="contained"
-            onPress={handleLogin}
+            onPress={handleRegister}
             loading={loading}
             disabled={loading}
             style={styles.button}
           >
-            {loading ? 'Ingresando...' : 'Ingresar'}
+            {loading ? 'Registrando...' : 'Registrarse'}
           </Button>
 
           <View style={styles.separator}>
             <View style={styles.separatorLine} />
             <Text variant="bodySmall" style={styles.separatorText}>
-              No tenes cuenta?
+              Ya tenes cuenta?
             </Text>
             <View style={styles.separatorLine} />
           </View>
 
           <Button
             mode="outlined"
-            onPress={() => router.push('/register')}
+            onPress={() => router.push('/login')}
             disabled={loading}
             style={styles.button}
           >
-            Registrarse
+            Iniciar sesion
           </Button>
         </View>
       </ScrollView>

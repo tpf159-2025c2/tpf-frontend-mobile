@@ -1,51 +1,31 @@
-import { Icon, Menu, Button, IconButton } from "react-native-paper";
+import { Icon } from "react-native-paper";
 import { Tabs } from "expo-router";
-import { useState } from "react";
 
-import {
-  Home,
-  GlobeIcon,
-  ArrowDownToDotIcon,
-  PlayIcon,
-  SettingsIcon,
-} from "lucide-react-native";
-
-import { useTheme } from "@react-navigation/native";
 export default function TabLayout() {
-  const [visible, setVisible] = useState(false);
-
-  const openMenu = () => setVisible(true);
-
-  const closeMenu = () => setVisible(false);
   return (
     <Tabs
       screenOptions={{
-        // headerBackgroundContainerStyle: {
-        //   opacity: 5,
-        // },
-        headerRight: () => (
-          <Menu
-            visible={visible}
-            onDismiss={closeMenu}
-            anchor={<IconButton onPress={openMenu} icon={"plus"}></IconButton>}
-          >
-            <Menu.Item title="Agregar dispositivo"></Menu.Item>
-          </Menu>
-        ),
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#E0E0E0",
+        },
+        tabBarActiveTintColor: "#1E88E5",
+        tabBarInactiveTintColor: "#757575",
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="houses"
         options={{
-          tabBarIcon: ({}) => <Icon source={"home"} size={25}></Icon>,
-          title: "Asdasdasd",
+          tabBarIcon: ({ color }) => <Icon source="home" size={25} color={color} />,
+          title: "Mis Casas",
         }}
       />
       <Tabs.Screen
-        name="welcome"
+        name="settings"
         options={{
-          tabBarIcon: ({}) => <Icon source={"camera"} size={25}></Icon>,
-          title: "welcome"
+          tabBarIcon: ({ color }) => <Icon source="cog" size={25} color={color} />,
+          title: "Ajustes",
         }}
       />
     </Tabs>
