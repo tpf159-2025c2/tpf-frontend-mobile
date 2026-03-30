@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useState, useEffect, useCallback } from "react";
+import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
 import {
   Text,
   Card,
@@ -11,11 +11,11 @@ import {
   Chip,
   List,
   Divider,
-} from 'react-native-paper';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import houseService from '@/services/houseService';
+} from "react-native-paper";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+import houseService from "@/services/houseService";
 import {
   Sensor,
   SensorReading,
@@ -23,11 +23,14 @@ import {
   SENSOR_STATUS_LABELS,
   SENSOR_STATUS_COLORS,
   SENSOR_ICONS,
-} from '@/services/types';
+} from "@/services/types";
 
 export default function SensorDetailsScreen() {
   const router = useRouter();
-  const { id, sensorId } = useLocalSearchParams<{ id: string; sensorId: string }>();
+  const { id, sensorId } = useLocalSearchParams<{
+    id: string;
+    sensorId: string;
+  }>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -36,12 +39,10 @@ export default function SensorDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [readingsLoading, setReadingsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate] = useState<Date | null>(null);
-  const [showFromPicker, setShowFromPicker] = useState(false);
-  const [showToPicker, setShowToPicker] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id || !sensorId) return;
@@ -51,11 +52,13 @@ export default function SensorDetailsScreen() {
         houseService.getSensor(id, sensorId),
         houseService.getSensorMetrics(id, sensorId),
       ]);
+      console.log(sensorData);
+      
       setSensor(sensorData);
       setReadings(metricsData.readings || []);
-      setError('');
+      setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar datos');
+      setError(err instanceof Error ? err.message : "Error al cargar datos");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -80,10 +83,14 @@ export default function SensorDetailsScreen() {
       if (fromDate) params.from = fromDate.toISOString();
       if (toDate) params.to = toDate.toISOString();
 
-      const metricsData = await houseService.getSensorMetrics(id, sensorId, params);
+      const metricsData = await houseService.getSensorMetrics(
+        id,
+        sensorId,
+        params,
+      );
       setReadings(metricsData.readings || []);
     } catch (err) {
-      console.error('Error filtering readings:', err);
+      console.error("Error filtering readings:", err);
     } finally {
       setReadingsLoading(false);
     }
@@ -91,7 +98,9 @@ export default function SensorDetailsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[styles.centered, { backgroundColor: theme.colors.background }]}
+      >
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
@@ -99,7 +108,9 @@ export default function SensorDetailsScreen() {
 
   if (error) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+      >
         <Appbar.Header style={{ marginTop: insets.top }}>
           <Appbar.BackAction onPress={() => router.back()} />
           <Appbar.Content title="Error" />
@@ -115,20 +126,26 @@ export default function SensorDetailsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <Appbar.Header style={{ marginTop: insets.top }}>
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={sensor?.name || 'Sensor'} />
+        <Appbar.Content title={sensor?.name || "Sensor"} />
         <Appbar.Action
           icon="pencil"
           onPress={() =>
-            router.push(`/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/edit`)
+            router.push(
+              `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/edit`,
+            )
           }
         />
         <Appbar.Action
           icon="delete"
           onPress={() =>
-            router.push(`/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/delete`)
+            router.push(
+              `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/delete`,
+            )
           }
         />
       </Appbar.Header>
@@ -139,13 +156,15 @@ export default function SensorDetailsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {sensor?.status === 'PENDING' && (
+        {sensor?.status === "PENDING" && (
           <View style={styles.pairingBanner}>
             <Button
               mode="contained"
               icon="link"
               onPress={() =>
-                router.push(`/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/pairing`)
+                router.push(
+                  `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/pairing`,
+                )
               }
             >
               Aceptar Emparejamiento
@@ -162,7 +181,10 @@ export default function SensorDetailsScreen() {
               <Chip
                 style={[
                   styles.statusChip,
-                  { backgroundColor: SENSOR_STATUS_COLORS[sensor!.status] + '20' },
+                  {
+                    backgroundColor:
+                      SENSOR_STATUS_COLORS[sensor!.status] + "20",
+                  },
                 ]}
                 textStyle={{ color: SENSOR_STATUS_COLORS[sensor!.status] }}
               >
@@ -208,19 +230,31 @@ export default function SensorDetailsScreen() {
         <View style={styles.filterContainer}>
           <Button
             mode="outlined"
-            onPress={() => setShowFromPicker(true)}
+            onPress={() =>
+              DateTimePickerAndroid.open({
+                value: fromDate || new Date(),
+                mode: "date",
+                onChange: (event, date) => { if (date) setFromDate(date); },
+              })
+            }
             compact
             style={styles.dateButton}
           >
-            {fromDate ? fromDate.toLocaleDateString() : 'Desde'}
+            {fromDate ? fromDate.toLocaleDateString() : "Desde"}
           </Button>
           <Button
             mode="outlined"
-            onPress={() => setShowToPicker(true)}
+            onPress={() =>
+              DateTimePickerAndroid.open({
+                value: toDate || new Date(),
+                mode: "date",
+                onChange: (event, date) => { if (date) setToDate(date); },
+              })
+            }
             compact
             style={styles.dateButton}
           >
-            {toDate ? toDate.toLocaleDateString() : 'Hasta'}
+            {toDate ? toDate.toLocaleDateString() : "Hasta"}
           </Button>
           <Button
             mode="contained"
@@ -232,28 +266,6 @@ export default function SensorDetailsScreen() {
             Filtrar
           </Button>
         </View>
-
-        {showFromPicker && (
-          <DateTimePicker
-            value={fromDate || new Date()}
-            mode="datetime"
-            onChange={(event, date) => {
-              setShowFromPicker(false);
-              if (date) setFromDate(date);
-            }}
-          />
-        )}
-
-        {showToPicker && (
-          <DateTimePicker
-            value={toDate || new Date()}
-            mode="datetime"
-            onChange={(event, date) => {
-              setShowToPicker(false);
-              if (date) setToDate(date);
-            }}
-          />
-        )}
 
         {readings.length === 0 ? (
           <Text style={styles.emptyText}>Sin lecturas disponibles</Text>
@@ -282,23 +294,23 @@ const styles = StyleSheet.create({
   },
   centered: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
   },
   pairingBanner: {
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   detailCard: {
     margin: 16,
   },
   detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 8,
   },
   detailLabel: {
@@ -315,20 +327,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   sectionTitle: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   filterContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 16,
     gap: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
   },
   dateButton: {
     flex: 1,
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.7,
     paddingVertical: 20,
   },

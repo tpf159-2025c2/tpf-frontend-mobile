@@ -5,6 +5,7 @@ import {
   CreateHouseData,
   UpdateHouseData,
   Sensor,
+  SensorResponse,
   CreateSensorData,
   UpdateSensorData,
   Member,
@@ -120,8 +121,9 @@ class HouseService {
       const error = await response.json();
       throw new Error(error.message || "Error al obtener el sensor");
     }
+    const sensorData: SensorResponse = await response.json();
 
-    return response.json();
+    return sensorData.sensor;
   }
 
   async createSensor(

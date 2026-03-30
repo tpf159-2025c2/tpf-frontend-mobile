@@ -25,35 +25,38 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
-export type SensorType = 'MOTION' | 'MAGNETIC' | 'GAS' | 'SOUND';
-export type SensorStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+export type SensorType = "MOTION" | "MAGNETIC" | "GAS" | "SOUND";
+export type SensorStatus = "PENDING" | "ACCEPTED" | "REJECTED";
 
 export const SENSOR_TYPE_LABELS: Record<SensorType, string> = {
-  MOTION: 'Movimiento',
-  MAGNETIC: 'Magnetico',
-  GAS: 'Gas',
-  SOUND: 'Sonido',
+  MOTION: "Movimiento",
+  MAGNETIC: "Magnetico",
+  GAS: "Gas",
+  SOUND: "Sonido",
 };
 
 export const SENSOR_STATUS_LABELS: Record<SensorStatus, string> = {
-  ACCEPTED: 'Aceptado',
-  PENDING: 'Pendiente',
-  REJECTED: 'Rechazado',
+  ACCEPTED: "Aceptado",
+  PENDING: "Pendiente",
+  REJECTED: "Rechazado",
 };
 
 export const SENSOR_STATUS_COLORS: Record<SensorStatus, string> = {
-  ACCEPTED: '#28a745',
-  PENDING: '#ffc107',
-  REJECTED: '#dc3545',
+  ACCEPTED: "#28a745",
+  PENDING: "#ffc107",
+  REJECTED: "#dc3545",
 };
 
 export const SENSOR_ICONS: Record<SensorType, string> = {
-  MOTION: 'eye',
-  MAGNETIC: 'door',
-  GAS: 'gas-cylinder',
-  SOUND: 'volume-high',
+  MOTION: "eye",
+  MAGNETIC: "door",
+  GAS: "gas-cylinder",
+  SOUND: "volume-high",
 };
 
+export interface SensorResponse {
+  sensor: Sensor;
+}
 export interface Sensor {
   id: string;
   name: string;
@@ -83,13 +86,13 @@ export interface UpdateSensorData {
   location?: string;
 }
 
-export type MemberRole = 'OWNER' | 'ADMIN' | 'MEMBER';
-export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE';
+export type MemberRole = "OWNER" | "ADMIN" | "MEMBER";
+export type MemberStatus = "ACTIVE" | "PENDING" | "INACTIVE";
 
 export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
-  OWNER: 'Propietario',
-  ADMIN: 'Administrador',
-  MEMBER: 'Miembro',
+  OWNER: "Propietario",
+  ADMIN: "Administrador",
+  MEMBER: "Miembro",
 };
 
 export interface Member {

@@ -1,26 +1,35 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from './config';
-import { Credentials, RegisterData, AuthResponse } from './types';
-import { router } from 'expo-router';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_URL } from "./config";
+import { Credentials, RegisterData, AuthResponse } from "./types";
+import { router } from "expo-router";
 
-const ACCESS_TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
-const USER_ID_KEY = 'user_id';
+const ACCESS_TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
+const USER_ID_KEY = "user_id";
 
 class AuthService {
   async login(credentials: Credentials): Promise<AuthResponse> {
+    console.log(API_URL);
+    console.log({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(credentials),
+    });
 
     const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(credentials),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Error al iniciar sesion');
+      console.log(error);
+      throw new Error(error.message || "Error al iniciar sesion");
     }
 
     const data: AuthResponse = await response.json();
@@ -32,18 +41,19 @@ class AuthService {
   }
 
   async register(userData: RegisterData): Promise<AuthResponse> {
+    console.log(API_URL);
 
     const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(userData),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Error al registrar usuario');
+      throw new Error(error.message || "Error al registrar usuario");
     }
 
     const data: AuthResponse = await response.json();
@@ -55,16 +65,15 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
-
     try {
       const accessToken = await this.getAccessToken();
       const refreshToken = await this.getRefreshToken();
 
       if (accessToken) {
         await fetch(`${API_URL}/auth/logout`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ refreshToken }),
@@ -102,21 +111,20 @@ class AuthService {
   async refresh(): Promise<string> {
     const refreshToken = await this.getRefreshToken();
     if (!refreshToken) {
-      throw new Error('No hay refresh token');
+      throw new Error("No hay refresh token");
     }
 
-
     const response = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ refreshToken }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Error al refrescar token');
+      throw new Error(error.message || "Error al refrescar token");
     }
 
     const data = await response.json();
@@ -126,12 +134,15 @@ class AuthService {
     return data.accessToken;
   }
 
-  async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  async fetchWithAuth(
+    url: string,
+    options: RequestInit = {},
+  ): Promise<Response> {
     const makeRequest = async (token: string | null) => {
       return fetch(url, {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...options.headers,
           Authorization: `Bearer ${token}`,
         },
@@ -146,19 +157,19 @@ class AuthService {
         response = await makeRequest(newToken);
       } catch {
         await this.clearAuth();
-        router.replace('/login');
-        throw new Error('Sesion expirada');
+        router.replace("/login");
+        throw new Error("Sesion expirada");
       }
     }
 
     if (response.status === 403) {
-      router.replace('/(protected)/(tabs)/houses');
-      throw new Error('Sin permisos');
+      router.replace("/(protected)/(tabs)/houses");
+      throw new Error("Sin permisos");
     }
 
     if (response.status === 404) {
-      router.replace('/(protected)/(tabs)/houses');
-      throw new Error('Recurso no encontrado');
+      router.replace("/(protected)/(tabs)/houses");
+      throw new Error("Recurso no encontrado");
     }
 
     return response;
@@ -170,7 +181,11 @@ class AuthService {
   }
 
   async clearAuth(): Promise<void> {
-    await AsyncStorage.multiRemove([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_ID_KEY]);
+    await AsyncStorage.multiRemove([
+      ACCESS_TOKEN_KEY,
+      REFRESH_TOKEN_KEY,
+      USER_ID_KEY,
+    ]);
   }
 }
 
