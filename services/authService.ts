@@ -7,10 +7,26 @@ const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 const USER_ID_KEY = "user_id";
 
+const log = (method: string, url: string, status?: number) => {
+  if (status !== undefined) {
+    console.log(`[API] ${method} ${url} → ${status}`);
+  } else {
+    console.log(`[API] ${method} ${url}`);
+  }
+};
+
+const logError = (method: string, url: string, status: number, body: unknown) => {
+  console.error(
+    `[API] ${method} ${url} → ${status}`,
+    JSON.stringify(body, null, 2),
+  );
+};
+
 class AuthService {
   async login(credentials: Credentials): Promise<AuthResponse> {
-    console.log(API_URL);
-    console.log({
+    const url = `${API_URL}/auth/login`;
+    log("POST", url);
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -18,18 +34,11 @@ class AuthService {
       body: JSON.stringify(credentials),
     });
 
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(credentials),
-    });
-
+    log("POST", url, response.status);
     if (!response.ok) {
-      const error = await response.json();
-      console.log(error);
-      throw new Error(error.message || "Error al iniciar sesion");
+      const body = await response.json();
+      logError("POST", url, response.status, body);
+      throw new Error(body.message || "Error al iniciar sesion");
     }
 
     const data: AuthResponse = await response.json();
@@ -41,9 +50,9 @@ class AuthService {
   }
 
   async register(userData: RegisterData): Promise<AuthResponse> {
-    console.log(API_URL);
-
-    const response = await fetch(`${API_URL}/auth/register`, {
+    const url = `${API_URL}/auth/register`;
+    log("POST", url);
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -51,9 +60,11 @@ class AuthService {
       body: JSON.stringify(userData),
     });
 
+    log("POST", url, response.status);
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Error al registrar usuario");
+      const body = await response.json();
+      logError("POST", url, response.status, body);
+      throw new Error(body.message || "Error al registrar usuario");
     }
 
     const data: AuthResponse = await response.json();
@@ -65,12 +76,14 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
+    const url = `${API_URL}/auth/logout`;
     try {
       const accessToken = await this.getAccessToken();
       const refreshToken = await this.getRefreshToken();
 
       if (accessToken) {
-        await fetch(`${API_URL}/auth/logout`, {
+        log("POST", url);
+        await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -138,6 +151,8 @@ class AuthService {
     url: string,
     options: RequestInit = {},
   ): Promise<Response> {
+    const method = (options.method || "GET").toUpperCase();
+
     const makeRequest = async (token: string | null) => {
       return fetch(url, {
         ...options,
@@ -149,9 +164,12 @@ class AuthService {
       });
     };
 
+    log(method, url);
     let response = await makeRequest(await this.getAccessToken());
 
     if (response.status === 401) {
+      log(method, url, 401);
+      console.log(`[API] token expired, refreshing…`);
       try {
         const newToken = await this.refresh();
         response = await makeRequest(newToken);
@@ -162,12 +180,16 @@ class AuthService {
       }
     }
 
+    log(method, url, response.status);
+
     if (response.status === 403) {
+      logError(method, url, 403, { error: "Sin permisos" });
       router.replace("/(protected)/(tabs)/houses");
       throw new Error("Sin permisos");
     }
 
     if (response.status === 404) {
+      logError(method, url, 404, { error: "Recurso no encontrado" });
       router.replace("/(protected)/(tabs)/houses");
       throw new Error("Recurso no encontrado");
     }
