@@ -54,6 +54,13 @@ export const SENSOR_ICONS: Record<SensorType, string> = {
   SOUND: "volume-high",
 };
 
+export const SENSOR_TYPE_COLORS: Record<SensorType, string> = {
+  MOTION: "#1D9E75",
+  MAGNETIC: "#475569",
+  GAS: "#EF9F27",
+  SOUND: "#334155",
+};
+
 export interface SensorResponse {
   sensor: Sensor;
 }
@@ -93,6 +100,18 @@ export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
   OWNER: "Propietario",
   ADMIN: "Administrador",
   MEMBER: "Miembro",
+};
+
+export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
+  ACTIVE: "Activo",
+  PENDING: "Pendiente",
+  INACTIVE: "Inactivo",
+};
+
+export const MEMBER_STATUS_COLORS: Record<MemberStatus, string> = {
+  ACTIVE: "#28a745",
+  PENDING: "#ffc107",
+  INACTIVE: "#6c757d",
 };
 
 export interface Member {

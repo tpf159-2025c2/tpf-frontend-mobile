@@ -52,8 +52,6 @@ export default function SensorDetailsScreen() {
         houseService.getSensor(id, sensorId),
         houseService.getSensorMetrics(id, sensorId),
       ]);
-      console.log(sensorData);
-      
       setSensor(sensorData);
       setReadings(metricsData.readings || []);
       setError("");
@@ -133,6 +131,14 @@ export default function SensorDetailsScreen() {
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title={sensor?.name || "Sensor"} />
         <Appbar.Action
+          icon="bell-outline"
+          onPress={() =>
+            router.push(
+              `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/configuration`,
+            )
+          }
+        />
+        <Appbar.Action
           icon="pencil"
           onPress={() =>
             router.push(
@@ -183,10 +189,10 @@ export default function SensorDetailsScreen() {
                   styles.statusChip,
                   {
                     backgroundColor:
-                      SENSOR_STATUS_COLORS[sensor!.status] + "20",
+                      (SENSOR_STATUS_COLORS[sensor!.status] ?? '#6c757d') + "20",
                   },
                 ]}
-                textStyle={{ color: SENSOR_STATUS_COLORS[sensor!.status] }}
+                textStyle={{ color: SENSOR_STATUS_COLORS[sensor!.status] ?? '#6c757d' }}
               >
                 {SENSOR_STATUS_LABELS[sensor!.status]}
               </Chip>

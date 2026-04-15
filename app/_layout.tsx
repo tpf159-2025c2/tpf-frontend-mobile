@@ -14,20 +14,23 @@ export const lightTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#1E88E5",
+    primary: "#1D9E75",
     onPrimary: "#FFFFFF",
 
-    secondary: "#64B5F6",
-    onSecondary: "#FFFFFF",
+    secondary: "#9FE1CB",
+    onSecondary: "#111827",
 
     background: "#FFFFFF",
     surface: "#FFFFFF",
-    onSurface: "#1C1B1F",
+    onSurface: "#111827",
     surfaceVariant: "#F5F5F5",
-    outline: "#E0E0E0",
+    outline: "#9FE1CB",
 
-    tertiary: "#42A5F5",
+    tertiary: "#085041",
     onTertiary: "#FFFFFF",
+
+    error: "#dc3545",
+    onError: "#FFFFFF",
 
     elevation: {
       level0: "transparent",

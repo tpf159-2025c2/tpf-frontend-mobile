@@ -23,7 +23,10 @@ import {
   SENSOR_STATUS_LABELS,
   SENSOR_STATUS_COLORS,
   SENSOR_ICONS,
+  SENSOR_TYPE_COLORS,
   MEMBER_ROLE_LABELS,
+  MEMBER_STATUS_LABELS,
+  MEMBER_STATUS_COLORS,
 } from '@/services/types';
 
 export default function HouseDetailsScreen() {
@@ -167,6 +170,7 @@ export default function HouseDetailsScreen() {
                   <IconButton
                     icon={SENSOR_ICONS[sensor.type] || 'chart-bar'}
                     size={32}
+                    iconColor={SENSOR_TYPE_COLORS[sensor.type]}
                     style={styles.sensorIcon}
                   />
                   <Text variant="titleSmall" numberOfLines={1}>
@@ -179,9 +183,9 @@ export default function HouseDetailsScreen() {
                     compact
                     style={[
                       styles.statusChip,
-                      { backgroundColor: SENSOR_STATUS_COLORS[sensor.status] + '20' },
+                      { backgroundColor: (SENSOR_STATUS_COLORS[sensor.status] ?? '#6c757d') + '20' },
                     ]}
-                    textStyle={{ color: SENSOR_STATUS_COLORS[sensor.status], fontSize: 10 }}
+                    textStyle={{ color: SENSOR_STATUS_COLORS[sensor.status] ?? '#6c757d', fontSize: 10 }}
                   >
                     {SENSOR_STATUS_LABELS[sensor.status]}
                   </Chip>
@@ -206,8 +210,37 @@ export default function HouseDetailsScreen() {
             {members.map((member) => (
               <List.Item
                 key={member.membershipId}
-                title={member.name}
-                description={`${member.email} - ${MEMBER_ROLE_LABELS[member.role]}`}
+                title={member.name || 'Pendiente de registro'}
+                titleStyle={!member.name ? { opacity: 0.6, fontStyle: 'italic' } : undefined}
+                description={() => (
+                  <View style={styles.memberDescription}>
+                    <Text variant="bodySmall" style={styles.memberEmail}>
+                      {member.email}
+                    </Text>
+                    <View style={styles.memberBadges}>
+                      <Chip
+                        compact
+                        style={styles.roleBadge}
+                        textStyle={styles.badgeText}
+                      >
+                        {MEMBER_ROLE_LABELS[member.role]}
+                      </Chip>
+                      <Chip
+                        compact
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: (MEMBER_STATUS_COLORS[member.status] ?? '#6c757d') + '20' },
+                        ]}
+                        textStyle={[
+                          styles.badgeText,
+                          { color: MEMBER_STATUS_COLORS[member.status] ?? '#6c757d' },
+                        ]}
+                      >
+                        {MEMBER_STATUS_LABELS[member.status]}
+                      </Chip>
+                    </View>
+                  </View>
+                )}
                 left={(props) => <List.Icon {...props} icon="account" />}
                 right={() => (
                   <View style={styles.memberActions}>
@@ -320,5 +353,27 @@ const styles = StyleSheet.create({
   },
   memberActions: {
     flexDirection: 'row',
+  },
+  memberDescription: {
+    marginTop: 2,
+    gap: 6,
+  },
+  memberEmail: {
+    opacity: 0.7,
+  },
+  memberBadges: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  roleBadge: {
+    height: 22,
+  },
+  statusBadge: {
+    height: 22,
+  },
+  badgeText: {
+    fontSize: 10,
+    lineHeight: 14,
   },
 });
