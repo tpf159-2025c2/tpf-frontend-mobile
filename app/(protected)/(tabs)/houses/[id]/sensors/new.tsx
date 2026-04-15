@@ -1,18 +1,13 @@
-import { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { TextInput, Button, HelperText, Appbar, useTheme } from 'react-native-paper';
+import { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, Button, Appbar, useTheme, Card, ActivityIndicator, Chip } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Picker } from '@react-native-picker/picker';
 import houseService from '@/services/houseService';
-import { SensorType, SENSOR_TYPE_LABELS } from '@/services/types';
+import { Sensor, SENSOR_TYPE_LABELS } from '@/services/types';
 
-const SENSOR_TYPES: { value: SensorType; label: string }[] = [
-  { value: 'MOTION', label: SENSOR_TYPE_LABELS.MOTION },
-  { value: 'MAGNETIC', label: SENSOR_TYPE_LABELS.MAGNETIC },
-  { value: 'GAS', label: SENSOR_TYPE_LABELS.GAS },
-  { value: 'SOUND', label: SENSOR_TYPE_LABELS.SOUND },
-];
+const MAX_RETRIES = 10;
+const POLL_INTERVAL_MS = 5000;
 
 export default function NewSensorScreen() {
   const router = useRouter();
@@ -20,35 +15,46 @@ export default function NewSensorScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [name, setName] = useState('');
-  const [type, setType] = useState<SensorType>('MOTION');
-  const [hardwareId, setHardwareId] = useState('');
-  const [location, setLocation] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [sensors, setSensors] = useState<Sensor[]>([]);
+  const [attempt, setAttempt] = useState(1);
+  const [status, setStatus] = useState<'loading' | 'retrying' | 'done'>('loading');
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleCreate = async () => {
-    if (!name.trim() || !type || !hardwareId.trim()) {
-      setError('Por favor completa los campos requeridos');
-      return;
-    }
+  const poll = (currentAttempt: number) => {
+    setAttempt(currentAttempt);
+    setStatus('loading');
 
-    setError('');
-    setLoading(true);
-
-    try {
-      await houseService.createSensor(id!, {
-        name: name.trim(),
-        type,
-        hardwareId: hardwareId.trim(),
-        location: location.trim() || undefined,
+    houseService.getPairRequests(id!)
+      .then((data) => {
+        setSensors(data);
+        if (currentAttempt >= MAX_RETRIES) {
+          setStatus('done');
+          return;
+        }
+        setStatus('retrying');
+        timeoutRef.current = setTimeout(() => poll(currentAttempt + 1), POLL_INTERVAL_MS);
+      })
+      .catch(() => {
+        if (currentAttempt >= MAX_RETRIES) {
+          setStatus('done');
+          return;
+        }
+        setStatus('retrying');
+        timeoutRef.current = setTimeout(() => poll(currentAttempt + 1), POLL_INTERVAL_MS);
       });
-      router.back();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear sensor');
-    } finally {
-      setLoading(false);
-    }
+  };
+
+  useEffect(() => {
+    poll(1);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const handleReset = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setSensors([]);
+    poll(1);
   };
 
   return (
@@ -58,84 +64,81 @@ export default function NewSensorScreen() {
         <Appbar.Content title="Agregar Sensor" />
       </Appbar.Header>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.content}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text variant="titleMedium" style={styles.title}>
+          Sensores disponibles para emparejar
+        </Text>
+
+        <View style={styles.statusRow}>
+          {status !== 'done' ? (
+            <>
+              <ActivityIndicator
+                size="small"
+                color={status === 'retrying' ? theme.colors.secondary : theme.colors.primary}
+                style={styles.spinner}
+              />
+              <Text variant="bodySmall" style={styles.statusText}>
+                Buscando sensores... ({attempt}/{MAX_RETRIES})
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text variant="bodySmall" style={styles.statusText}>
+                Búsqueda finalizada.
+              </Text>
+              <Button mode="text" compact onPress={handleReset} style={styles.retryButton}>
+                Buscar de nuevo
+              </Button>
+            </>
+          )}
+        </View>
+
+        {sensors.length === 0 && status === 'done' ? (
+          <Text style={styles.emptyText}>No se encontraron sensores pendientes.</Text>
+        ) : (
+          sensors.map((sensor) => (
+            <Card key={sensor.id} style={styles.sensorCard}>
+              <Card.Content style={styles.cardContent}>
+                <View style={styles.sensorInfo}>
+                  <Text variant="titleSmall" style={styles.sensorName}>
+                    {sensor.name}
+                  </Text>
+                  <Chip compact style={styles.typeChip}>
+                    {SENSOR_TYPE_LABELS[sensor.type] ?? sensor.type}
+                  </Chip>
+                  <Text variant="bodySmall" style={styles.hardwareId}>
+                    HW: {sensor.hardwareId}
+                  </Text>
+                  {sensor.location ? (
+                    <Text variant="bodySmall" style={styles.location}>
+                      {sensor.location}
+                    </Text>
+                  ) : null}
+                </View>
+                <Button
+                  mode="contained"
+                  compact
+                  onPress={() =>
+                    router.push(
+                      `/(protected)/(tabs)/houses/${id}/sensors/${sensor.id}/pairing`,
+                    )
+                  }
+                >
+                  Emparejar
+                </Button>
+              </Card.Content>
+            </Card>
+          ))
+        )}
+
+        <Button
+          mode="outlined"
+          onPress={() => router.back()}
+          style={styles.backButton}
         >
-          {error ? (
-            <HelperText type="error" visible={true} style={styles.error}>
-              {error}
-            </HelperText>
-          ) : null}
-
-          <TextInput
-            label="Nombre"
-            value={name}
-            onChangeText={setName}
-            mode="outlined"
-            placeholder="Ej: Sensor Temperatura Sala"
-            disabled={loading}
-            style={styles.input}
-          />
-
-          <View style={[styles.pickerContainer, { borderColor: theme.colors.outline }]}>
-            <Picker
-              selectedValue={type}
-              onValueChange={(value) => setType(value)}
-              enabled={!loading}
-              style={styles.picker}
-            >
-              {SENSOR_TYPES.map((t) => (
-                <Picker.Item key={t.value} label={t.label} value={t.value} />
-              ))}
-            </Picker>
-          </View>
-
-          <TextInput
-            label="Hardware ID"
-            value={hardwareId}
-            onChangeText={setHardwareId}
-            mode="outlined"
-            placeholder="Ej: HW-001"
-            disabled={loading}
-            style={styles.input}
-          />
-
-          <TextInput
-            label="Ubicacion (opcional)"
-            value={location}
-            onChangeText={setLocation}
-            mode="outlined"
-            placeholder="Ej: Sala principal"
-            disabled={loading}
-            style={styles.input}
-          />
-
-          <View style={styles.actions}>
-            <Button
-              mode="outlined"
-              onPress={() => router.back()}
-              disabled={loading}
-              style={styles.button}
-            >
-              Cancelar
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleCreate}
-              loading={loading}
-              disabled={loading}
-              style={styles.button}
-            >
-              Guardar
-            </Button>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          Volver
+        </Button>
+      </ScrollView>
     </View>
   );
 }
@@ -145,32 +148,60 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  title: {
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 8,
+  },
+  spinner: {
+    marginRight: 4,
+  },
+  statusText: {
+    opacity: 0.7,
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
+  retryButton: {
+    marginLeft: 'auto',
   },
-  error: {
-    marginBottom: 8,
+  emptyText: {
+    textAlign: 'center',
+    opacity: 0.7,
+    paddingVertical: 40,
   },
-  input: {
-    marginBottom: 16,
+  sensorCard: {
+    marginBottom: 12,
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderRadius: 4,
-    marginBottom: 16,
-  },
-  picker: {
-    height: 50,
-  },
-  actions: {
+  cardContent: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  button: {
-    minWidth: 100,
+  sensorInfo: {
+    flex: 1,
+    marginRight: 12,
+    gap: 4,
+  },
+  sensorName: {
+    fontWeight: '600',
+  },
+  typeChip: {
+    alignSelf: 'flex-start',
+  },
+  hardwareId: {
+    opacity: 0.6,
+  },
+  location: {
+    opacity: 0.6,
+  },
+  backButton: {
+    marginTop: 24,
   },
 });

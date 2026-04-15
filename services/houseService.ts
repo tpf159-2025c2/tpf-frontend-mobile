@@ -274,8 +274,24 @@ class HouseService {
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Error al eliminar miembro");
+      const body = await response.json();
+      logError("deleteMember", response.status, body, `house=${houseId} member=${memberId}`);
+      throw new Error(body.message || "Error al eliminar miembro");
+    }
+
+    log("deleteMember", `member=${memberId} deleted`);
+  }
+
+  async getPairRequests(houseId: string): Promise<Sensor[]> {
+    log("getPairRequests", `house=${houseId}`);
+    const response = await authService.fetchWithAuth(
+      `${API_URL}/households/${houseId}/pair-requests`,
+    );
+
+    if (!response.ok) {
+      const body = await response.json();
+      logError("getPairRequests", response.status, body, `house=${houseId}`);
+      throw new Error(body.message || "Error al obtener solicitudes de emparejamiento");
     }
   }
 }
