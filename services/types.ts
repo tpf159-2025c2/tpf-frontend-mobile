@@ -163,3 +163,20 @@ export interface MembersResponse {
 export interface ReadingsResponse {
   readings: SensorReading[];
 }
+
+export interface NotificationPreferences {
+  mobile: boolean;
+  email: boolean;
+}
+
+export interface SensorPreference {
+  sensorId: string;
+  enabled: boolean;
+  threshold: number | null;
+  timeFrom: string | null;
+  timeTo: string | null;
+}
+
+export interface SensorPreferencesResponse {
+  preferences: SensorPreference[];
+}
