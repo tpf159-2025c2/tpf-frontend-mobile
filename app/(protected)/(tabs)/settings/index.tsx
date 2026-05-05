@@ -151,17 +151,6 @@ export default function SettingsScreen() {
 
         <Divider />
 
-        <List.Section>
-          <List.Subheader>Aplicacion</List.Subheader>
-          <List.Item
-            title="Version"
-            description="1.0.0"
-            left={(props) => <List.Icon {...props} icon="information" />}
-          />
-        </List.Section>
-
-        <Divider />
-
         <View style={styles.logoutSection}>
           <Button
             mode="outlined"
