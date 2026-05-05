@@ -3,6 +3,7 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 're
 import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import useAuthStore from '@/hooks/useAuthStore';
+import SdhLogo from '@/components/SdhLogo';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -44,6 +45,9 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
+          <View style={styles.logoContainer}>
+            <SdhLogo size={80} variant="header" />
+          </View>
           <Text variant="headlineMedium" style={styles.title}>
             Bienvenido
           </Text>
@@ -70,7 +74,7 @@ export default function LoginScreen() {
           />
 
           <TextInput
-            label="Contrasena"
+            label="Contraseña"
             value={password}
             onChangeText={setPassword}
             mode="outlined"
@@ -129,6 +133,10 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
   title: {
     textAlign: 'center',

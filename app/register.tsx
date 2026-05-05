@@ -82,7 +82,7 @@ export default function RegisterScreen() {
           />
 
           <TextInput
-            label="Contrasena"
+            label="Contraseña"
             value={password}
             onChangeText={setPassword}
             mode="outlined"

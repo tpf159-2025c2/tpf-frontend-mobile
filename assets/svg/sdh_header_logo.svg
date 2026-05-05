@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <radialGradient id="sg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#5DCAA5"/>
+      <stop offset="100%" stop-color="#085041"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo redondeado oscuro -->
+  <rect width="48" height="48" rx="10" fill="#111827"/>
+
+  <!-- Escudo -->
+  <path d="M24 5 L38 10 L38 27 Q38 39 24 44 Q10 39 10 27 L10 10 Z"
+        fill="url(#sg)"/>
+  <path d="M24 5 L38 10 L38 27 Q38 39 24 44 Q10 39 10 27 L10 10 Z"
+        fill="none" stroke="#9FE1CB" stroke-width="1" opacity="0.6"/>
+
+  <!-- Casa — techo -->
+  <polygon points="24,13 33,21 15,21" fill="white" opacity="0.95"/>
+  <!-- Casa — cuerpo -->
+  <rect x="16.5" y="21" width="15" height="12" rx="1" fill="white" opacity="0.9"/>
+  <!-- Puerta -->
+  <rect x="21" y="27" width="6" height="6" rx="1.5" fill="#0F6E56"/>
+  <!-- Ventana izquierda -->
+  <rect x="18" y="23" width="3" height="3" rx="0.7" fill="#0F6E56" opacity="0.8"/>
+  <!-- Ventana derecha -->
+  <rect x="27" y="23" width="3" height="3" rx="0.7" fill="#0F6E56" opacity="0.8"/>
+  <!-- Chimenea -->
+  <rect x="28" y="13" width="3" height="6" rx="0.7" fill="white" opacity="0.85"/>
+
+  <!-- Punto antena -->
+  <circle cx="24" cy="4"  r="2.2" fill="#EF9F27"/>
+  <circle cx="24" cy="4"  r="4.2" fill="none" stroke="#EF9F27" stroke-width="0.9" opacity="0.4"/>
+
+  <!-- Ondas izquierda -->
+  <path d="M12 12 Q10.5 8  13.5 5.5" fill="none" stroke="#EF9F27" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
+  <path d="M10.5 13.5 Q8.5 7.5 14 4" fill="none" stroke="#EF9F27" stroke-width="0.9" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Ondas derecha -->
+  <path d="M36 12 Q37.5 8  34.5 5.5" fill="none" stroke="#EF9F27" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
+  <path d="M37.5 13.5 Q39.5 7.5 34 4" fill="none" stroke="#EF9F27" stroke-width="0.9" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Pulso ECG -->
+  <polyline points="11,38 14,38 15.5,34 17.5,42 19.5,36 21.5,38 24,38 26,34 28,42 30,36 32,38 37,38"
+            fill="none" stroke="#5DCAA5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+</svg>

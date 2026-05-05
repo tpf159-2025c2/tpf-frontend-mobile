@@ -7,6 +7,7 @@ import "../global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MD3LightTheme as DefaultTheme } from "react-native-paper";
 import useAuthStore from "@/hooks/useAuthStore";
+import LoadingScreen from "@/components/LoadingScreen";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ export const lightTheme = {
 export default function RootLayout() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const setLoading = useAuthStore((state) => state.setLoading);
+  const loading = useAuthStore((state) => state.loading);
 
   useEffect(() => {
     checkAuth().finally(() => setLoading(false));
@@ -61,11 +63,15 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <PaperProvider theme={lightTheme}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="login" />
-          <Stack.Screen name="register" />
-          <Stack.Screen name="(protected)" />
-        </Stack>
+        {loading ? (
+          <LoadingScreen />
+        ) : (
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="login" />
+            <Stack.Screen name="register" />
+            <Stack.Screen name="(protected)" />
+          </Stack>
+        )}
       </PaperProvider>
     </QueryClientProvider>
   );

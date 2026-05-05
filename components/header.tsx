@@ -10,6 +10,7 @@ import {
 } from "@gluestack-ui/themed";
 import { ChevronDownIcon, PlusIcon } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import SdhLogo from "./SdhLogo";
 
 export default function Header() {
   const [selected, setSelected] = useState("Option 1");
@@ -20,7 +21,8 @@ export default function Header() {
       className="flex-row items-center justify-between px-4 bg-white shadow-sm"
       style={{ paddingTop: insets.top, paddingBottom: 12 }}
     >
-      <HStack space="sm" alignItems="center">
+      <HStack space="md" alignItems="center">
+        <SdhLogo size={36} variant="header" />
         <Box flexDirection="row" alignItems="center">
           <Text className="text-xl font-semibold text-gray-900">
             {selected}

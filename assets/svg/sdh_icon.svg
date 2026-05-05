@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <radialGradient id="sg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#5DCAA5"/>
+      <stop offset="100%" stop-color="#085041"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo oscuro redondeado -->
+  <rect width="32" height="32" rx="6" fill="#111827"/>
+
+  <!-- Escudo -->
+  <path d="M16 3 L26 7 L26 18 Q26 26 16 30 Q6 26 6 18 L6 7 Z"
+        fill="url(#sg)"/>
+  <path d="M16 3 L26 7 L26 18 Q26 26 16 30 Q6 26 6 18 L6 7 Z"
+        fill="none" stroke="#9FE1CB" stroke-width="0.8" opacity="0.6"/>
+
+  <!-- Casa — techo -->
+  <polygon points="16,9 22,14 10,14" fill="white" opacity="0.95"/>
+  <!-- Casa — cuerpo -->
+  <rect x="11" y="14" width="10" height="8" rx="0.5" fill="white" opacity="0.9"/>
+  <!-- Puerta -->
+  <rect x="14" y="18" width="4" height="4" rx="1" fill="#0F6E56"/>
+  <!-- Ventanas -->
+  <rect x="12" y="16" width="2" height="2" rx="0.5" fill="#0F6E56" opacity="0.8"/>
+  <rect x="18" y="16" width="2" height="2" rx="0.5" fill="#0F6E56" opacity="0.8"/>
+  <!-- Chimenea -->
+  <rect x="18" y="9"  width="2" height="4"  rx="0.5" fill="white" opacity="0.85"/>
+
+  <!-- Punto antena (señal) -->
+  <circle cx="16" cy="2.5" r="1.5" fill="#EF9F27"/>
+  <circle cx="16" cy="2.5" r="3"   fill="none" stroke="#EF9F27" stroke-width="0.7" opacity="0.45"/>
+
+  <!-- Ondas de señal izquierda -->
+  <path d="M8 8 Q7 5 9.5 3.5"  fill="none" stroke="#EF9F27" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
+  <path d="M7 9 Q5.5 5 9 2.5"  fill="none" stroke="#EF9F27" stroke-width="0.7" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Ondas de señal derecha -->
+  <path d="M24 8 Q25 5 22.5 3.5" fill="none" stroke="#EF9F27" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
+  <path d="M25 9 Q26.5 5 23 2.5" fill="none" stroke="#EF9F27" stroke-width="0.7" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Pulso / ECG sensor en base del escudo -->
+  <polyline points="8,25 10.5,25 11.5,22 13,28 14,24 15.5,25 16.5,25 17.5,22 19,28 20,24 21.5,25 24,25"
+            fill="none" stroke="#5DCAA5" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+</svg>
