@@ -367,13 +367,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   roleBadge: {
-    height: 22,
+    height: 30,
   },
   statusBadge: {
-    height: 22,
+    height: 30,
   },
   badgeText: {
     fontSize: 10,
-    lineHeight: 14,
+    lineHeight: 18,
   },
 });
