@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, Text as RNText } from 'react-native';
 import {
   Text,
   FAB,
   Searchbar,
   ActivityIndicator,
   useTheme,
-  Card,
-  IconButton,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
+import BaseCard from '@/components/BaseCard';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
@@ -70,17 +70,28 @@ export default function HousesListScreen() {
   const displayedHouses = searchResults !== null ? searchResults : houses;
 
   const renderHouseCard = ({ item }: { item: House }) => (
-    <Card
+    <BaseCard
       style={styles.card}
       onPress={() => router.push(`/(protected)/(tabs)/houses/${item.id}`)}
-    >
-      <Card.Title
-        title={item.name}
-        subtitle={item.address}
-        left={(props) => <IconButton {...props} icon="home" />}
-        right={(props) => <IconButton {...props} icon="chevron-right" />}
-      />
-    </Card>
+      bannerColor="#1D9E75"
+      bannerHeight={70}
+      bannerContent={<Ionicons name="home" size={40} color="rgba(255,255,255,0.9)" />}
+      bodyContent={
+        <>
+          <RNText style={styles.cardTitle}>{item.name}</RNText>
+          <View style={styles.cardAddressRow}>
+            <Ionicons name="git-network-outline" size={12} color="#999" />
+            <RNText style={styles.cardAddress}>{item.address}</RNText>
+          </View>
+        </>
+      }
+      footerContent={
+        <>
+          <RNText style={styles.cardFooterText}>Ver sensores</RNText>
+          <Ionicons name="chevron-forward" size={12} color="#1D9E75" style={{ marginLeft: 'auto' }} />
+        </>
+      }
+    />
   );
 
   if (loading) {
@@ -179,6 +190,27 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 6,
+  },
+  cardAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardAddress: {
+    fontSize: 13,
+    color: '#666',
+    fontFamily: 'monospace',
+  },
+  cardFooterText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1D9E75',
   },
   emptyContainer: {
     flex: 1,
