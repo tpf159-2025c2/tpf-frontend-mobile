@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, Text as RNText } from 'react-native';
 import {
   Text,
-  FAB,
   Searchbar,
   ActivityIndicator,
   useTheme,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import BaseCard from '@/components/BaseCard';
+import AddCard from '@/components/AddCard';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
@@ -144,13 +144,17 @@ export default function HousesListScreen() {
             </Text>
           </View>
         }
-      />
-
-      <FAB
-        icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-        onPress={() => router.push('/(protected)/(tabs)/houses/new')}
-        color={theme.colors.onPrimary}
+        ListFooterComponent={
+          <View style={styles.addCardContainer}>
+            <AddCard
+              icon="add-circle-outline"
+              label="Agregar casa"
+              onPress={() => router.push('/(protected)/(tabs)/houses/new')}
+              width={100}
+              height={100}
+            />
+          </View>
+        }
       />
     </View>
   );
@@ -212,6 +216,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1D9E75',
   },
+  addCardContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -220,11 +228,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     opacity: 0.7,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
   },
 });
