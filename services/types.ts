@@ -167,6 +167,7 @@ export interface ReadingsResponse {
 }
 
 export interface NotificationPreferences {
+  browser: boolean;
   mobile: boolean;
   email: boolean;
 }
