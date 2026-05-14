@@ -37,7 +37,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
@@ -102,7 +102,7 @@ export default function LoginScreen() {
 
           <View style={styles.separator}>
             <View style={styles.separatorLine} />
-            <Text variant="bodySmall" style={styles.separatorText}>
+            <Text variant="bodySmall" style={styles.separatorText} numberOfLines={1} adjustsFontSizeToFit>
               No tenes cuenta?
             </Text>
             <View style={styles.separatorLine} />
@@ -167,7 +167,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   separatorText: {
-    marginHorizontal: 16,
+    marginHorizontal: 8,
     opacity: 0.7,
+    flexShrink: 0,
   },
 });

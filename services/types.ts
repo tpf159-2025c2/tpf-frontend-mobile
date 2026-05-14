@@ -94,7 +94,7 @@ export interface UpdateSensorData {
 }
 
 export type MemberRole = "OWNER" | "ADMIN" | "MEMBER";
-export type MemberStatus = "ACTIVE" | "PENDING" | "INACTIVE";
+export type MemberStatus = "ACTIVE" | "ACCEPTED" | "PENDING" | "INACTIVE";
 
 export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
   OWNER: "Propietario",
@@ -104,12 +104,14 @@ export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
 
 export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
   ACTIVE: "Activo",
+  ACCEPTED: "Aceptado",
   PENDING: "Pendiente",
   INACTIVE: "Inactivo",
 };
 
 export const MEMBER_STATUS_COLORS: Record<MemberStatus, string> = {
   ACTIVE: "#28a745",
+  ACCEPTED: "#1D9E75",
   PENDING: "#ffc107",
   INACTIVE: "#6c757d",
 };
