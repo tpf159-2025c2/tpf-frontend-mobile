@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, Text as RNText, Pressable } from 'react-native';
 import {
   Text,
-  Card,
   Button,
   IconButton,
   ActivityIndicator,
@@ -12,6 +11,8 @@ import {
   List,
   Divider,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
+import BaseCard from '@/components/BaseCard';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
@@ -22,12 +23,36 @@ import {
   SENSOR_TYPE_LABELS,
   SENSOR_STATUS_LABELS,
   SENSOR_STATUS_COLORS,
-  SENSOR_ICONS,
-  SENSOR_TYPE_COLORS,
   MEMBER_ROLE_LABELS,
   MEMBER_STATUS_LABELS,
   MEMBER_STATUS_COLORS,
 } from '@/services/types';
+
+const SENSOR_IONICONS: Record<string, string> = {
+  MOTION: 'eye-outline',
+  MAGNETIC: 'magnet-outline',
+  GAS: 'flame-outline',
+  SOUND: 'volume-medium-outline',
+};
+
+const STATUS_ICON: Record<string, string> = {
+  ACCEPTED: 'ellipse',
+  PENDING: 'time-outline',
+  REJECTED: 'close-circle-outline',
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  ACCEPTED: '#1D9E75',
+  PENDING: '#EF9F27',
+  REJECTED: '#dc3545',
+};
+
+const AVATAR_COLORS = ['#1D9E75', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444'];
+function avatarColor(name: string) {
+  let hash = 0;
+  for (const c of name) hash = c.charCodeAt(0) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 export default function HouseDetailsScreen() {
   const router = useRouter();
@@ -39,7 +64,6 @@ export default function HouseDetailsScreen() {
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
   const fetchData = useCallback(async () => {
@@ -59,16 +83,10 @@ export default function HouseDetailsScreen() {
       setError(err instanceof Error ? err.message : 'Error al cargar datos');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [id]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
     fetchData();
   }, [fetchData]);
 
@@ -112,38 +130,12 @@ export default function HouseDetailsScreen() {
         />
       </Appbar.Header>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
+      <View style={styles.content}>
         <View style={styles.headerInfo}>
           <Text variant="bodyLarge" style={styles.address}>
             {house?.address}
           </Text>
         </View>
-
-        <View style={styles.actions}>
-          <Button
-            mode="contained"
-            icon="plus"
-            onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/sensors/new`)}
-            style={styles.actionButton}
-          >
-            Agregar Sensor
-          </Button>
-          <Button
-            mode="outlined"
-            icon="account-plus"
-            onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/members/new`)}
-            style={styles.actionButton}
-          >
-            Agregar Miembro
-          </Button>
-        </View>
-
-        <Divider style={styles.divider} />
 
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -154,48 +146,57 @@ export default function HouseDetailsScreen() {
           </Text>
         </View>
 
-        {sensors.length === 0 ? (
-          <Text style={styles.emptyText}>No hay sensores registrados</Text>
-        ) : (
-          <View style={styles.sensorsGrid}>
-            {sensors.map((sensor) => (
-              <Card
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sensorsGrid}>
+          {sensors.map((sensor) => {
+            const statusColor = STATUS_COLOR[sensor.status] ?? '#666';
+            return (
+              <BaseCard
                 key={sensor.id}
                 style={styles.sensorCard}
-                onPress={() =>
-                  router.push(`/(protected)/(tabs)/houses/${id}/sensors/${sensor.id}`)
+                onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/sensors/${sensor.id}`)}
+                bannerColor="#1D9E75"
+                bannerHeight={70}
+                cardOpacity={sensor.status === 'REJECTED' ? 0.5 : sensor.status === 'PENDING' ? 0.75 : 1}
+                bannerContent={
+                  <Ionicons name={SENSOR_IONICONS[sensor.type] as any ?? 'thermometer-outline'} size={28} color="rgba(255,255,255,0.9)" />
                 }
-              >
-                <Card.Content style={styles.sensorContent}>
-                  <IconButton
-                    icon={SENSOR_ICONS[sensor.type] || 'chart-bar'}
-                    size={32}
-                    iconColor={SENSOR_TYPE_COLORS[sensor.type]}
-                    style={styles.sensorIcon}
-                  />
-                  <Text variant="titleSmall" numberOfLines={1}>
-                    {sensor.name}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.sensorType}>
-                    {SENSOR_TYPE_LABELS[sensor.type]}
-                  </Text>
-                  <Chip
-                    compact
-                    style={[
-                      styles.statusChip,
-                      { backgroundColor: (SENSOR_STATUS_COLORS[sensor.status] ?? '#6c757d') + '20' },
-                    ]}
-                    textStyle={{ color: SENSOR_STATUS_COLORS[sensor.status] ?? '#6c757d', fontSize: 10 }}
-                  >
-                    {SENSOR_STATUS_LABELS[sensor.status]}
-                  </Chip>
-                </Card.Content>
-              </Card>
-            ))}
-          </View>
-        )}
-
-        <Divider style={styles.divider} />
+                bodyContent={
+                  <>
+                    <RNText style={styles.sensorName} numberOfLines={1}>{sensor.name}</RNText>
+                    {sensor.location ? (
+                      <View style={styles.sensorRow}>
+                        <Ionicons name="location-outline" size={11} color="#999" />
+                        <RNText style={styles.sensorLocation} numberOfLines={1}>{sensor.location}</RNText>
+                      </View>
+                    ) : null}
+                    <RNText style={styles.sensorHwId} numberOfLines={1}>{sensor.hardwareId}</RNText>
+                  </>
+                }
+                footerContent={
+                  <>
+                    <View style={styles.sensorStatusRow}>
+                      <Ionicons name={STATUS_ICON[sensor.status] as any ?? 'ellipse'} size={8} color={statusColor} />
+                      <RNText style={[styles.sensorStatusText, { color: statusColor }]}>
+                        {SENSOR_STATUS_LABELS[sensor.status]}
+                      </RNText>
+                    </View>
+                    <View style={styles.sensorBadge}>
+                      <RNText style={styles.sensorBadgeText}>{SENSOR_TYPE_LABELS[sensor.type]}</RNText>
+                    </View>
+                    <Ionicons name="chevron-forward" size={11} color="#bbb" />
+                  </>
+                }
+              />
+            );
+          })}
+          <Pressable
+            style={styles.sensorAddCard}
+            onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/sensors/new`)}
+          >
+            <Ionicons name="add-circle-outline" size={36} color="#1D9E75" />
+            <RNText style={styles.sensorAddText}>Agregar{'\n'}sensor</RNText>
+          </Pressable>
+        </ScrollView>
 
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -203,75 +204,54 @@ export default function HouseDetailsScreen() {
           </Text>
         </View>
 
-        {members.length === 0 ? (
-          <Text style={styles.emptyText}>No hay miembros registrados</Text>
-        ) : (
-          <View style={styles.membersList}>
-            {members.map((member) => (
-              <List.Item
-                key={member.membershipId}
-                title={member.name || 'Pendiente de registro'}
-                titleStyle={!member.name ? { opacity: 0.6, fontStyle: 'italic' } : undefined}
-                description={() => (
-                  <View style={styles.memberDescription}>
-                    <Text variant="bodySmall" style={styles.memberEmail}>
-                      {member.email}
-                    </Text>
-                    <View style={styles.memberBadges}>
-                      <Chip
-                        compact
-                        style={styles.roleBadge}
-                        textStyle={styles.badgeText}
-                      >
-                        {MEMBER_ROLE_LABELS[member.role]}
-                      </Chip>
-                      <Chip
-                        compact
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: (MEMBER_STATUS_COLORS[member.status] ?? '#6c757d') + '20' },
-                        ]}
-                        textStyle={[
-                          styles.badgeText,
-                          { color: MEMBER_STATUS_COLORS[member.status] ?? '#6c757d' },
-                        ]}
-                      >
-                        {MEMBER_STATUS_LABELS[member.status]}
-                      </Chip>
-                    </View>
-                  </View>
-                )}
-                left={(props) => <List.Icon {...props} icon="account" />}
-                right={() => (
-                  <View style={styles.memberActions}>
-                    <IconButton
-                      icon="pencil"
-                      size={20}
-                      onPress={() =>
-                        router.push(
-                          `/(protected)/(tabs)/houses/${id}/members/${member.membershipId}/edit`
-                        )
-                      }
-                    />
-                    <IconButton
-                      icon="delete"
-                      size={20}
-                      onPress={() =>
-                        router.push(
-                          `/(protected)/(tabs)/houses/${id}/members/${member.membershipId}/delete`
-                        )
-                      }
-                    />
-                  </View>
-                )}
-                style={styles.memberItem}
-              />
-            ))}
-          </View>
-        )}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.membersList}>
+            {members.map((member) => {
+              const displayName = member.name || 'Pendiente';
+              const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+              const bgColor = member.name ? avatarColor(member.name) : '#999';
+              return (
+                <BaseCard
+                  key={member.membershipId}
+                  style={styles.memberCard}
+                  onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/members/${member.membershipId}/edit`)}
+                  bannerColor={bgColor}
+                  bannerHeight={80}
+                  bannerContent={<RNText style={styles.memberInitials}>{initials}</RNText>}
+                  bodyContent={
+                    <>
+                      <RNText style={[styles.memberName, !member.name && { opacity: 0.6, fontStyle: 'italic' }]}>
+                        {displayName}
+                      </RNText>
+                      <RNText style={styles.memberEmail} numberOfLines={1}>{member.email}</RNText>
+                    </>
+                  }
+                  footerContent={
+                    <>
+                      <View style={styles.memberRoleBadge}>
+                        <RNText style={styles.memberRoleText}>{MEMBER_ROLE_LABELS[member.role]}</RNText>
+                      </View>
+                      <View style={[styles.memberStatusBadge, { backgroundColor: (MEMBER_STATUS_COLORS[member.status] ?? '#6c757d') + '20' }]}>
+                        <RNText style={[styles.memberStatusText, { color: MEMBER_STATUS_COLORS[member.status] ?? '#6c757d' }]}>
+                          {MEMBER_STATUS_LABELS[member.status]}
+                        </RNText>
+                      </View>
+                      <Ionicons name="chevron-forward" size={11} color="#bbb" style={{ marginLeft: 'auto' }} />
+                    </>
+                  }
+                />
+              );
+            })}
+          <Pressable
+            style={styles.memberAddCard}
+            onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/members/new`)}
+          >
+            <Ionicons name="person-add-outline" size={36} color="#1D9E75" />
+            <RNText style={styles.memberAddText}>Agregar{'\n'}miembro</RNText>
+          </Pressable>
+        </ScrollView>
 
         <View style={{ height: 40 }} />
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -290,7 +270,7 @@ const styles = StyleSheet.create({
   },
   headerInfo: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingVertical: 6,
   },
   address: {
     opacity: 0.7,
@@ -304,11 +284,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   divider: {
-    marginVertical: 8,
+    marginVertical: 4,
   },
   section: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 6,
   },
   sectionTitle: {
     fontWeight: 'bold',
@@ -323,57 +303,132 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   sensorsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     gap: 12,
+    flexDirection: 'row',
   },
   sensorCard: {
-    width: '47%',
+    width: 200,
   },
-  sensorContent: {
+  sensorAddCard: {
+    width: 200,
+    height: '100%',
+    minHeight: 160,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#9FE1CB',
+    borderStyle: 'dashed',
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'center',
+    gap: 8,
   },
-  sensorIcon: {
-    margin: 0,
+  sensorAddText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1D9E75',
+    textAlign: 'center',
   },
-  sensorType: {
-    opacity: 0.7,
-    marginTop: 2,
+  sensorName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#222',
   },
-  statusChip: {
-    marginTop: 8,
+  sensorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  sensorLocation: {
+    fontSize: 12,
+    color: '#666',
+  },
+  sensorHwId: {
+    fontSize: 11,
+    color: '#bbb',
+    fontFamily: 'monospace',
+  },
+  sensorStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
+  sensorStatusText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  sensorBadge: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 20,
+  },
+  sensorBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#666',
   },
   membersList: {
-    paddingHorizontal: 8,
-  },
-  memberItem: {
+    paddingHorizontal: 12,
     paddingVertical: 4,
-  },
-  memberActions: {
+    gap: 12,
     flexDirection: 'row',
   },
-  memberDescription: {
-    marginTop: 2,
-    gap: 6,
+  memberCard: {
+    width: 200,
+  },
+  memberInitials: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.9)',
+  },
+  memberName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 4,
   },
   memberEmail: {
-    opacity: 0.7,
+    fontSize: 12,
+    color: '#999',
   },
-  memberBadges: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
+  memberAddCard: {
+    width: 200,
+    minHeight: 180,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#9FE1CB',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  roleBadge: {
-    height: 30,
+  memberAddText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1D9E75',
+    textAlign: 'center',
   },
-  statusBadge: {
-    height: 30,
+  memberRoleBadge: {
+    backgroundColor: '#e8f0fe',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 20,
   },
-  badgeText: {
+  memberStatusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 20,
+    marginLeft: 4,
+  },
+  memberStatusText: {
     fontSize: 10,
-    lineHeight: 18,
+    fontWeight: '600',
+  },
+  memberRoleText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#1D9E75',
   },
 });
