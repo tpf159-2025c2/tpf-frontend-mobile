@@ -12,14 +12,14 @@ export default function TabLayout() {
           borderTopColor: "#E0E0E0",
         },
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: "#757575",
+        tabBarInactiveTintColor: "#9E9E9E",
       }}
     >
       <Tabs.Screen
         name="houses"
         options={{
-          tabBarIcon: () => (
-            <Icon source="home" size={25} color={theme.colors.onSecondary} />
+          tabBarIcon: ({ focused, color }) => (
+            <Icon source={focused ? "home" : "home-outline"} size={25} color={color} />
           ),
           title: "Mis Casas",
         }}
@@ -27,8 +27,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarIcon: () => (
-            <Icon source="cog" size={25} color={theme.colors.onSecondary} />
+          tabBarIcon: ({ focused, color }) => (
+            <Icon source={focused ? "cog" : "cog-outline"} size={25} color={color} />
           ),
           title: "Ajustes",
         }}
