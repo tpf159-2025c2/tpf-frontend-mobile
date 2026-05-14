@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Text as RNText, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Text as RNText } from 'react-native';
 import {
   Text,
   Button,
@@ -10,9 +10,11 @@ import {
   Chip,
   List,
   Divider,
+  Menu,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import BaseCard from '@/components/BaseCard';
+import AddCard from '@/components/AddCard';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
@@ -65,6 +67,7 @@ export default function HouseDetailsScreen() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -101,7 +104,7 @@ export default function HouseDetailsScreen() {
   if (error) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Appbar.Header style={{ marginTop: insets.top }}>
+        <Appbar.Header>
           <Appbar.BackAction onPress={() => router.back()} />
           <Appbar.Content title="Error" />
         </Appbar.Header>
@@ -117,24 +120,44 @@ export default function HouseDetailsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={house?.name || 'Casa'} />
-        <Appbar.Action
-          icon="pencil"
-          onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/edit`)}
-        />
-        <Appbar.Action
-          icon="delete"
-          onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/delete`)}
-        />
+        <Appbar.Content title={house?.name || 'Casa'} titleStyle={{ fontSize: 16 }} />
+        <Menu
+          visible={menuVisible}
+          onDismiss={() => setMenuVisible(false)}
+          anchor={
+            <Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} />
+          }
+        >
+          <Menu.Item
+            leadingIcon="pencil"
+            onPress={() => {
+              setMenuVisible(false);
+              router.push(`/(protected)/(tabs)/houses/${id}/edit`);
+            }}
+            title="Editar"
+          />
+          <Menu.Item
+            leadingIcon="delete"
+            onPress={() => {
+              setMenuVisible(false);
+              router.push(`/(protected)/(tabs)/houses/${id}/delete`);
+            }}
+            title="Eliminar"
+            titleStyle={{ color: theme.colors.error }}
+          />
+        </Menu>
       </Appbar.Header>
 
       <View style={styles.content}>
         <View style={styles.headerInfo}>
-          <Text variant="bodyLarge" style={styles.address}>
-            {house?.address}
-          </Text>
+          <View style={styles.addressRow}>
+            <Ionicons name="git-network-outline" size={16} color="#999" />
+            <Text variant="bodySmall" style={styles.address}>
+              {house?.address}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -146,7 +169,7 @@ export default function HouseDetailsScreen() {
           </Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sensorsGrid}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sensorsScroll} contentContainerStyle={styles.sensorsGrid}>
           {sensors.map((sensor) => {
             const statusColor = STATUS_COLOR[sensor.status] ?? '#666';
             return (
@@ -189,13 +212,11 @@ export default function HouseDetailsScreen() {
               />
             );
           })}
-          <Pressable
-            style={styles.sensorAddCard}
+          <AddCard
+            icon="add-circle-outline"
+            label={`Agregar\nsensor`}
             onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/sensors/new`)}
-          >
-            <Ionicons name="add-circle-outline" size={36} color="#1D9E75" />
-            <RNText style={styles.sensorAddText}>Agregar{'\n'}sensor</RNText>
-          </Pressable>
+          />
         </ScrollView>
 
         <View style={styles.section}>
@@ -204,7 +225,7 @@ export default function HouseDetailsScreen() {
           </Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.membersList}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.membersScroll} contentContainerStyle={styles.membersList}>
             {members.map((member) => {
               const displayName = member.name || 'Pendiente';
               const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -241,13 +262,11 @@ export default function HouseDetailsScreen() {
                 />
               );
             })}
-          <Pressable
-            style={styles.memberAddCard}
+          <AddCard
+            icon="person-add-outline"
+            label={`Agregar\nmiembro`}
             onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/members/new`)}
-          >
-            <Ionicons name="person-add-outline" size={36} color="#1D9E75" />
-            <RNText style={styles.memberAddText}>Agregar{'\n'}miembro</RNText>
-          </Pressable>
+          />
         </ScrollView>
 
         <View style={{ height: 40 }} />
@@ -271,6 +290,11 @@ const styles = StyleSheet.create({
   headerInfo: {
     paddingHorizontal: 20,
     paddingVertical: 6,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   address: {
     opacity: 0.7,
@@ -302,32 +326,18 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     paddingVertical: 20,
   },
+  sensorsScroll: {
+    height: 180,
+  },
   sensorsGrid: {
     paddingHorizontal: 12,
     paddingVertical: 4,
     gap: 12,
     flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   sensorCard: {
     width: 200,
-  },
-  sensorAddCard: {
-    width: 200,
-    height: '100%',
-    minHeight: 160,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#9FE1CB',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  sensorAddText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1D9E75',
-    textAlign: 'center',
   },
   sensorName: {
     fontSize: 14,
@@ -369,11 +379,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#666',
   },
+  membersScroll: {
+    height: 200,
+  },
   membersList: {
     paddingHorizontal: 12,
     paddingVertical: 4,
     gap: 12,
     flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   memberCard: {
     width: 200,
@@ -392,23 +406,6 @@ const styles = StyleSheet.create({
   memberEmail: {
     fontSize: 12,
     color: '#999',
-  },
-  memberAddCard: {
-    width: 200,
-    minHeight: 180,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#9FE1CB',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  memberAddText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1D9E75',
-    textAlign: 'center',
   },
   memberRoleBadge: {
     backgroundColor: '#e8f0fe',
