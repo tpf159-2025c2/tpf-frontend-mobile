@@ -1,22 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, List, Button, Divider, useTheme, Switch, ActivityIndicator } from 'react-native-paper';
+import { Text, List, Button, IconButton, Divider, useTheme, Switch, ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useAuthStore from '@/hooks/useAuthStore';
 import userService from '@/services/userService';
 import { NotificationPreferences } from '@/services/types';
 
-const NOTIFICATION_ITEMS: { key: keyof NotificationPreferences; label: string; description: string }[] = [
+const NOTIFICATION_ITEMS: { key: keyof NotificationPreferences; label: string; description: string; icon: string }[] = [
+  {
+    key: 'browser',
+    label: 'Navegador',
+    description: 'Recibí alertas en tiempo real desde el navegador web.',
+    icon: 'web',
+  },
   {
     key: 'mobile',
     label: 'Notificaciones push',
     description: 'Recibí alertas en tiempo real sobre el estado de tu hogar en esta app.',
+    icon: 'bell-outline',
   },
   {
     key: 'email',
     label: 'Email',
     description: 'Recibí alertas sobre el estado de tu hogar por correo electrónico.',
+    icon: 'email-outline',
   },
 ];
 
@@ -28,7 +36,7 @@ export default function SettingsScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   const [loggingOut, setLoggingOut] = useState(false);
-  const [preferences, setPreferences] = useState<NotificationPreferences>({ mobile: false, email: false });
+  const [preferences, setPreferences] = useState<NotificationPreferences>({ browser: false, mobile: false, email: false });
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [prefsError, setPrefsError] = useState('');
   const [toggling, setToggling] = useState<keyof NotificationPreferences | null>(null);
@@ -107,6 +115,15 @@ export default function SettingsScreen() {
             title={user?.name || 'Usuario'}
             description={user?.email || ''}
             left={(props) => <List.Icon {...props} icon="account" />}
+            right={() => (
+              <IconButton
+                icon="logout"
+                onPress={handleLogout}
+                disabled={loggingOut}
+                iconColor={theme.colors.error}
+                size={28}
+              />
+            )}
           />
         </List.Section>
 
@@ -123,7 +140,7 @@ export default function SettingsScreen() {
               <Button compact onPress={fetchPreferences}>Reintentar</Button>
             </View>
           ) : (
-            NOTIFICATION_ITEMS.map(({ key, label, description }) => (
+            NOTIFICATION_ITEMS.map(({ key, label, description, icon }) => (
               <List.Item
                 key={key}
                 title={label}
@@ -132,7 +149,7 @@ export default function SettingsScreen() {
                 left={(props) => (
                   <List.Icon
                     {...props}
-                    icon={key === 'mobile' ? 'bell-outline' : 'email-outline'}
+                    icon={icon}
                   />
                 )}
                 right={() => (
@@ -149,21 +166,6 @@ export default function SettingsScreen() {
           )}
         </List.Section>
 
-        <Divider />
-
-        <View style={styles.logoutSection}>
-          <Button
-            mode="outlined"
-            onPress={handleLogout}
-            loading={loggingOut}
-            disabled={loggingOut}
-            icon="logout"
-            textColor={theme.colors.error}
-            style={styles.logoutButton}
-          >
-            Cerrar sesion
-          </Button>
-        </View>
       </ScrollView>
     </View>
   );
@@ -193,12 +195,5 @@ const styles = StyleSheet.create({
   },
   prefItem: {
     paddingVertical: 4,
-  },
-  logoutSection: {
-    padding: 20,
-    paddingTop: 30,
-  },
-  logoutButton: {
-    borderColor: '#dc3545',
   },
 });
