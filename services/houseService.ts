@@ -53,7 +53,8 @@ class HouseService {
       throw new Error(body.message || "Error al obtener la casa");
     }
 
-    return response.json();
+    const data = await response.json();
+    return data.household ?? data;
   }
 
   async createHouse(houseData: CreateHouseData): Promise<House> {
