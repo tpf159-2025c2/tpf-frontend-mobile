@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "tpf159-app",
-    "slug": "tpf159-app",
+    "name": "Supervision del Hogar",
+    "slug": "supervision-del-hogar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -20,7 +20,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.tpf159app"
+      "package": "com.tpf159.supervisionhogar",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -43,6 +44,14 @@
       ],
       "expo-font",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#1D9E75",
+          "androidMode": "default"
+        }
+      ],
+      [
         "react-native-ble-plx",
         {
           "isBackgroundEnabled": true,
@@ -54,6 +63,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ebb4068e-2b9f-4ab1-a10c-a4a5c31821da"
+      }
     }
   }
 }
