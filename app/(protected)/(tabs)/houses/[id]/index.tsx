@@ -16,7 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import BaseCard from '@/components/BaseCard';
 import AddCard from '@/components/AddCard';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
 import {
   House,
@@ -60,7 +59,6 @@ export default function HouseDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [house, setHouse] = useState<House | null>(null);
   const [sensors, setSensors] = useState<Sensor[]>([]);

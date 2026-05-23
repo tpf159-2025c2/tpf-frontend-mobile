@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button, Appbar, useTheme, Card, ActivityIndicator, Chip } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
 import { Sensor, SENSOR_TYPE_LABELS } from '@/services/types';
 
@@ -13,7 +12,6 @@ export default function NewSensorScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [attempt, setAttempt] = useState(1);
@@ -59,7 +57,7 @@ export default function NewSensorScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Agregar Sensor" />
       </Appbar.Header>

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { TextInput, Button, HelperText, Appbar, useTheme, ActivityIndicator } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import houseService from '@/services/houseService';
 import { SensorType, SENSOR_TYPE_LABELS } from '@/services/types';
@@ -18,7 +17,6 @@ export default function EditSensorScreen() {
   const router = useRouter();
   const { id, sensorId } = useLocalSearchParams<{ id: string; sensorId: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [name, setName] = useState('');
   const [type, setType] = useState<SensorType>('MOTION');
@@ -82,7 +80,7 @@ export default function EditSensorScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Editar Sensor" />
       </Appbar.Header>

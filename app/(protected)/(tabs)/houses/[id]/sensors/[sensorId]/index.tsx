@@ -2,18 +2,19 @@ import { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
 import {
   Text,
-  Card,
   Button,
-  IconButton,
   ActivityIndicator,
   useTheme,
   Appbar,
   Chip,
   List,
-  Divider,
+  Card,
+  Menu,
+  Modal,
+  Portal,
 } from "react-native-paper";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import houseService from "@/services/houseService";
 import {
@@ -22,8 +23,14 @@ import {
   SENSOR_TYPE_LABELS,
   SENSOR_STATUS_LABELS,
   SENSOR_STATUS_COLORS,
-  SENSOR_ICONS,
 } from "@/services/types";
+
+const SENSOR_IONICONS: Record<string, string> = {
+  MOTION: "eye-outline",
+  MAGNETIC: "magnet-outline",
+  GAS: "flame-outline",
+  SOUND: "volume-medium-outline",
+};
 
 export default function SensorDetailsScreen() {
   const router = useRouter();
@@ -32,7 +39,6 @@ export default function SensorDetailsScreen() {
     sensorId: string;
   }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [sensor, setSensor] = useState<Sensor | null>(null);
   const [readings, setReadings] = useState<SensorReading[]>([]);
@@ -40,7 +46,11 @@ export default function SensorDetailsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [readingsLoading, setReadingsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [menuVisible, setMenuVisible] = useState(false);
 
+  type Preset = "today" | "week" | "month" | "custom";
+  const [activePreset, setActivePreset] = useState<Preset | null>(null);
+  const [customModalVisible, setCustomModalVisible] = useState(false);
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate] = useState<Date | null>(null);
 
@@ -72,14 +82,13 @@ export default function SensorDetailsScreen() {
     fetchData();
   }, [fetchData]);
 
-  const handleFilter = async () => {
+  const fetchReadings = async (from: Date | null, to: Date | null) => {
     if (!id || !sensorId) return;
-
     setReadingsLoading(true);
     try {
       const params: { from?: string; to?: string } = {};
-      if (fromDate) params.from = fromDate.toISOString();
-      if (toDate) params.to = toDate.toISOString();
+      if (from) params.from = from.toISOString();
+      if (to) params.to = to.toISOString();
 
       const metricsData = await houseService.getSensorMetrics(
         id,
@@ -94,6 +103,37 @@ export default function SensorDetailsScreen() {
     }
   };
 
+  const handlePreset = (preset: "today" | "week" | "month") => {
+    const now = new Date();
+    let from: Date;
+    if (preset === "today") {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (preset === "week") {
+      from = new Date(now);
+      from.setDate(now.getDate() - 7);
+    } else {
+      from = new Date(now);
+      from.setMonth(now.getMonth() - 1);
+    }
+    setActivePreset(preset);
+    setFromDate(from);
+    setToDate(now);
+    fetchReadings(from, now);
+  };
+
+  const handleApplyCustom = () => {
+    setActivePreset("custom");
+    setCustomModalVisible(false);
+    fetchReadings(fromDate, toDate);
+  };
+
+  const handleClear = () => {
+    setActivePreset(null);
+    setFromDate(null);
+    setToDate(null);
+    fetchReadings(null, null);
+  };
+
   if (loading) {
     return (
       <View
@@ -104,12 +144,12 @@ export default function SensorDetailsScreen() {
     );
   }
 
-  if (error) {
+  if (error || !sensor) {
     return (
       <View
         style={[styles.container, { backgroundColor: theme.colors.background }]}
       >
-        <Appbar.Header style={{ marginTop: insets.top }}>
+        <Appbar.Header>
           <Appbar.BackAction onPress={() => router.back()} />
           <Appbar.Content title="Error" />
         </Appbar.Header>
@@ -123,173 +163,272 @@ export default function SensorDetailsScreen() {
     );
   }
 
+  const statusColor = SENSOR_STATUS_COLORS[sensor.status] ?? "#6c757d";
+  const typeIcon = (SENSOR_IONICONS[sensor.type] as any) ?? "thermometer-outline";
+
   return (
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={sensor?.name || "Sensor"} />
-        <Appbar.Action
-          icon="bell-outline"
-          onPress={() =>
-            router.push(
-              `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/configuration`,
-            )
+        <Appbar.Content title="" />
+        <Menu
+          visible={menuVisible}
+          onDismiss={() => setMenuVisible(false)}
+          anchor={
+            <Appbar.Action
+              icon="dots-vertical"
+              onPress={() => setMenuVisible(true)}
+            />
           }
-        />
-        <Appbar.Action
-          icon="pencil"
-          onPress={() =>
-            router.push(
-              `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/edit`,
-            )
-          }
-        />
-        <Appbar.Action
-          icon="delete"
-          onPress={() =>
-            router.push(
-              `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/delete`,
-            )
-          }
-        />
+        >
+          <Menu.Item
+            leadingIcon="bell-outline"
+            onPress={() => {
+              setMenuVisible(false);
+              router.push(
+                `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/configuration`,
+              );
+            }}
+            title="Configurar"
+          />
+          <Menu.Item
+            leadingIcon="pencil"
+            onPress={() => {
+              setMenuVisible(false);
+              router.push(
+                `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/edit`,
+              );
+            }}
+            title="Editar"
+          />
+          <Menu.Item
+            leadingIcon="delete"
+            onPress={() => {
+              setMenuVisible(false);
+              router.push(
+                `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/delete`,
+              );
+            }}
+            title="Eliminar"
+            titleStyle={{ color: theme.colors.error }}
+          />
+        </Menu>
       </Appbar.Header>
 
       <ScrollView
-        style={styles.content}
+        contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {sensor?.status === "PENDING" && (
-          <View style={styles.pairingBanner}>
-            <Button
-              mode="contained"
-              icon="link"
-              onPress={() =>
-                router.push(
-                  `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/pairing`,
-                )
-              }
-            >
-              Aceptar Emparejamiento
-            </Button>
-          </View>
+        <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
+          <Ionicons name={typeIcon} size={48} color="rgba(255,255,255,0.95)" />
+        </View>
+
+        <Text variant="titleLarge" style={styles.name}>
+          {sensor.name}
+        </Text>
+        {sensor.location ? (
+          <Text variant="bodyMedium" style={styles.location}>
+            {sensor.location}
+          </Text>
+        ) : null}
+
+        <View style={styles.chipsRow}>
+          <Chip compact style={styles.typeChip} textStyle={styles.typeChipText}>
+            {SENSOR_TYPE_LABELS[sensor.type]}
+          </Chip>
+          <Chip
+            compact
+            style={[styles.statusChip, { backgroundColor: statusColor + "20" }]}
+            textStyle={[styles.statusChipText, { color: statusColor }]}
+          >
+            {SENSOR_STATUS_LABELS[sensor.status]}
+          </Chip>
+        </View>
+
+        {sensor.status === "PENDING" && (
+          <Button
+            mode="contained"
+            icon="link"
+            onPress={() =>
+              router.push(
+                `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/pairing`,
+              )
+            }
+            style={styles.pairingButton}
+          >
+            Aceptar Emparejamiento
+          </Button>
         )}
 
         <Card style={styles.detailCard}>
           <Card.Content>
-            <View style={styles.detailRow}>
-              <Text variant="bodyMedium" style={styles.detailLabel}>
-                Estado
-              </Text>
-              <Chip
-                style={[
-                  styles.statusChip,
-                  {
-                    backgroundColor:
-                      (SENSOR_STATUS_COLORS[sensor!.status] ?? '#6c757d') + "20",
-                  },
-                ]}
-                textStyle={{ color: SENSOR_STATUS_COLORS[sensor!.status] ?? '#6c757d' }}
-              >
-                {SENSOR_STATUS_LABELS[sensor!.status]}
-              </Chip>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text variant="bodyMedium" style={styles.detailLabel}>
-                Tipo
-              </Text>
-              <Text variant="bodyMedium">
-                {SENSOR_TYPE_LABELS[sensor!.type]}
-              </Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text variant="bodyMedium" style={styles.detailLabel}>
+            <View style={styles.fieldHeader}>
+              <Ionicons name="barcode-outline" size={14} color="#666" />
+              <Text variant="labelSmall" style={styles.fieldLabel}>
                 Hardware ID
               </Text>
-              <Text variant="bodyMedium">{sensor!.hardwareId}</Text>
             </View>
-
-            {sensor?.location && (
-              <View style={styles.detailRow}>
-                <Text variant="bodyMedium" style={styles.detailLabel}>
-                  Ubicacion
-                </Text>
-                <Text variant="bodyMedium">{sensor.location}</Text>
-              </View>
-            )}
+            <Text
+              variant="bodyMedium"
+              style={[styles.fieldValue, styles.idText]}
+            >
+              {sensor.hardwareId}
+            </Text>
           </Card.Content>
         </Card>
 
-        <Divider style={styles.divider} />
+        <View style={styles.readingsSection}>
+          <View style={styles.sectionHeader}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Lecturas
+            </Text>
+            {activePreset !== null && (
+              <Chip
+                icon="close"
+                onPress={handleClear}
+                disabled={readingsLoading}
+                compact
+              >
+                Limpiar
+              </Chip>
+            )}
+          </View>
 
-        <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Lecturas
-          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.presetsRow}
+          >
+            <Chip
+              selected={activePreset === "today"}
+              onPress={() => handlePreset("today")}
+              disabled={readingsLoading}
+              style={styles.presetChip}
+            >
+              Hoy
+            </Chip>
+            <Chip
+              selected={activePreset === "week"}
+              onPress={() => handlePreset("week")}
+              disabled={readingsLoading}
+              style={styles.presetChip}
+            >
+              Semana
+            </Chip>
+            <Chip
+              selected={activePreset === "month"}
+              onPress={() => handlePreset("month")}
+              disabled={readingsLoading}
+              style={styles.presetChip}
+            >
+              Mes
+            </Chip>
+            <Chip
+              icon="calendar"
+              selected={activePreset === "custom"}
+              onPress={() => setCustomModalVisible(true)}
+              disabled={readingsLoading}
+              style={styles.presetChip}
+            >
+              Personalizado
+            </Chip>
+          </ScrollView>
+
+          {readingsLoading ? (
+            <ActivityIndicator style={styles.readingsLoader} color={theme.colors.primary} />
+          ) : readings.length === 0 ? (
+            <Text style={styles.emptyText}>Sin lecturas disponibles</Text>
+          ) : (
+            <View style={styles.readingsList}>
+              {readings.map((reading) => (
+                <List.Item
+                  key={reading.id}
+                  title={reading.value}
+                  description={new Date(reading.timestamp).toLocaleString()}
+                  left={(props) => <List.Icon {...props} icon="chart-line" />}
+                />
+              ))}
+            </View>
+          )}
         </View>
+      </ScrollView>
 
-        <View style={styles.filterContainer}>
+      <Portal>
+        <Modal
+          visible={customModalVisible}
+          onDismiss={() => setCustomModalVisible(false)}
+          contentContainerStyle={[
+            styles.modalContent,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
+          <Text variant="titleMedium" style={styles.modalTitle}>
+            Filtrar por fecha
+          </Text>
+
+          <Text variant="labelSmall" style={styles.modalLabel}>
+            Desde
+          </Text>
           <Button
             mode="outlined"
+            icon="calendar"
             onPress={() =>
               DateTimePickerAndroid.open({
                 value: fromDate || new Date(),
                 mode: "date",
-                onChange: (event, date) => { if (date) setFromDate(date); },
+                onChange: (event, date) => {
+                  if (date) setFromDate(date);
+                },
               })
             }
-            compact
-            style={styles.dateButton}
+            style={styles.modalDateButton}
           >
-            {fromDate ? fromDate.toLocaleDateString() : "Desde"}
+            {fromDate ? fromDate.toLocaleDateString() : "Elegir fecha"}
           </Button>
+
+          <Text variant="labelSmall" style={styles.modalLabel}>
+            Hasta
+          </Text>
           <Button
             mode="outlined"
+            icon="calendar"
             onPress={() =>
               DateTimePickerAndroid.open({
                 value: toDate || new Date(),
                 mode: "date",
-                onChange: (event, date) => { if (date) setToDate(date); },
+                onChange: (event, date) => {
+                  if (date) setToDate(date);
+                },
               })
             }
-            compact
-            style={styles.dateButton}
+            style={styles.modalDateButton}
           >
-            {toDate ? toDate.toLocaleDateString() : "Hasta"}
+            {toDate ? toDate.toLocaleDateString() : "Elegir fecha"}
           </Button>
-          <Button
-            mode="contained"
-            onPress={handleFilter}
-            loading={readingsLoading}
-            disabled={readingsLoading}
-            compact
-          >
-            Filtrar
-          </Button>
-        </View>
 
-        {readings.length === 0 ? (
-          <Text style={styles.emptyText}>Sin lecturas disponibles</Text>
-        ) : (
-          <View style={styles.readingsList}>
-            {readings.map((reading) => (
-              <List.Item
-                key={reading.id}
-                title={reading.value}
-                description={new Date(reading.timestamp).toLocaleString()}
-                left={(props) => <List.Icon {...props} icon="chart-line" />}
-              />
-            ))}
+          <View style={styles.modalActions}>
+            <Button
+              mode="outlined"
+              onPress={() => setCustomModalVisible(false)}
+              style={styles.modalButton}
+            >
+              Cancelar
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleApplyCustom}
+              disabled={!fromDate && !toDate}
+              style={styles.modalButton}
+            >
+              Aplicar
+            </Button>
           </View>
-        )}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -304,46 +443,95 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   content: {
-    flex: 1,
-  },
-  pairingBanner: {
-    padding: 16,
+    padding: 20,
     alignItems: "center",
   },
-  detailCard: {
-    margin: 16,
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  detailRow: {
+  name: {
+    fontWeight: "700",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  location: {
+    opacity: 0.7,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  chipsRow: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignSelf: "stretch",
+    marginBottom: 24,
+  },
+  typeChip: {
+    backgroundColor: "#f0f0f0",
+  },
+  typeChipText: {
+    color: "#666",
+    fontWeight: "600",
+    lineHeight: 16,
+  },
+  statusChip: {},
+  statusChipText: {
+    fontWeight: "600",
+    lineHeight: 16,
+  },
+  pairingButton: {
+    alignSelf: "stretch",
+    marginBottom: 16,
+  },
+  detailCard: {
+    width: "100%",
+    marginBottom: 12,
+  },
+  fieldHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
+  fieldLabel: {
+    opacity: 0.6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  fieldValue: {
+    textAlign: "center",
+    fontWeight: "600",
+    paddingVertical: 4,
+  },
+  idText: {
+    fontFamily: "monospace",
+    opacity: 0.7,
+  },
+  readingsSection: {
+    width: "100%",
+    marginTop: 16,
+  },
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
-  },
-  detailLabel: {
-    opacity: 0.7,
-  },
-  statusChip: {
-    height: 28,
-  },
-  divider: {
-    marginVertical: 8,
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontWeight: "bold",
   },
-  filterContainer: {
+  presetsRow: {
     flexDirection: "row",
-    paddingHorizontal: 16,
     gap: 8,
-    alignItems: "center",
-    marginBottom: 16,
+    paddingVertical: 4,
+    marginBottom: 12,
   },
-  dateButton: {
-    flex: 1,
+  presetChip: {
+    marginRight: 0,
   },
   emptyText: {
     textAlign: "center",
@@ -351,6 +539,38 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   readingsList: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
+  },
+  readingsLoader: {
+    paddingVertical: 24,
+  },
+  modalContent: {
+    marginHorizontal: 24,
+    padding: 24,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+  modalLabel: {
+    opacity: 0.6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  modalDateButton: {
+    marginBottom: 12,
+    alignSelf: "stretch",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: 16,
+  },
+  modalButton: {
+    minWidth: 90,
   },
 });

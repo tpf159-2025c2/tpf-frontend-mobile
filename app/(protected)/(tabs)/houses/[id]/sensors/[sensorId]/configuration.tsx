@@ -18,7 +18,6 @@ import {
   Divider,
 } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import houseService from '@/services/houseService';
 import userService from '@/services/userService';
@@ -28,7 +27,6 @@ export default function SensorConfigurationScreen() {
   const router = useRouter();
   const { id, sensorId } = useLocalSearchParams<{ id: string; sensorId: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
 
   const [sensorName, setSensorName] = useState('');
@@ -130,7 +128,7 @@ export default function SensorConfigurationScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Mis alertas" />
       </Appbar.Header>
