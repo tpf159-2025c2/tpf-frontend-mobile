@@ -123,6 +123,7 @@ export interface Member {
   email: string;
   role: MemberRole;
   status: MemberStatus;
+  createdAt: string;
 }
 
 export interface CreateMemberData {
