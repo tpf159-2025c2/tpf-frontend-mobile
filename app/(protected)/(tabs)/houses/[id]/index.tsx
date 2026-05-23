@@ -234,7 +234,7 @@ export default function HouseDetailsScreen() {
                 <BaseCard
                   key={member.membershipId}
                   style={styles.memberCard}
-                  onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/members/${member.membershipId}/edit`)}
+                  onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/members/${member.membershipId}`)}
                   bannerColor={bgColor}
                   bannerHeight={80}
                   bannerContent={<RNText style={styles.memberInitials}>{initials}</RNText>}
