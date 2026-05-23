@@ -84,6 +84,15 @@ export default function MemberDetailsScreen() {
     );
   }
 
+  const openMenu = () => {
+    if (menuVisible) {
+      setMenuVisible(false);
+      requestAnimationFrame(() => setMenuVisible(true));
+    } else {
+      setMenuVisible(true);
+    }
+  };
+
   const displayName = member.name || 'Pendiente';
   const initials = displayName
     .split(' ')
@@ -103,15 +112,17 @@ export default function MemberDetailsScreen() {
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
           anchor={
-            <Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} />
+            <Appbar.Action icon="dots-vertical" onPress={openMenu} />
           }
         >
           <Menu.Item
             leadingIcon="pencil"
             onPress={() => {
               setMenuVisible(false);
-              router.push(
-                `/(protected)/(tabs)/houses/${id}/members/${memberId}/edit`,
+              requestAnimationFrame(() =>
+                router.push(
+                  `/(protected)/(tabs)/houses/${id}/members/${memberId}/edit`,
+                ),
               );
             }}
             title="Editar"
@@ -120,8 +131,10 @@ export default function MemberDetailsScreen() {
             leadingIcon="delete"
             onPress={() => {
               setMenuVisible(false);
-              router.push(
-                `/(protected)/(tabs)/houses/${id}/members/${memberId}/delete`,
+              requestAnimationFrame(() =>
+                router.push(
+                  `/(protected)/(tabs)/houses/${id}/members/${memberId}/delete`,
+                ),
               );
             }}
             title="Eliminar"

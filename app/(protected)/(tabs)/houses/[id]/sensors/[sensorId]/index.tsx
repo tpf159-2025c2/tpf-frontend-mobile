@@ -166,6 +166,20 @@ export default function SensorDetailsScreen() {
   const statusColor = SENSOR_STATUS_COLORS[sensor.status] ?? "#6c757d";
   const typeIcon = (SENSOR_IONICONS[sensor.type] as any) ?? "thermometer-outline";
 
+  const openMenu = () => {
+    if (menuVisible) {
+      setMenuVisible(false);
+      requestAnimationFrame(() => setMenuVisible(true));
+    } else {
+      setMenuVisible(true);
+    }
+  };
+
+  const navigateFromMenu = (path: string) => {
+    setMenuVisible(false);
+    requestAnimationFrame(() => router.push(path as any));
+  };
+
   return (
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -177,40 +191,34 @@ export default function SensorDetailsScreen() {
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
           anchor={
-            <Appbar.Action
-              icon="dots-vertical"
-              onPress={() => setMenuVisible(true)}
-            />
+            <Appbar.Action icon="dots-vertical" onPress={openMenu} />
           }
         >
           <Menu.Item
             leadingIcon="bell-outline"
-            onPress={() => {
-              setMenuVisible(false);
-              router.push(
+            onPress={() =>
+              navigateFromMenu(
                 `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/configuration`,
-              );
-            }}
+              )
+            }
             title="Configurar"
           />
           <Menu.Item
             leadingIcon="pencil"
-            onPress={() => {
-              setMenuVisible(false);
-              router.push(
+            onPress={() =>
+              navigateFromMenu(
                 `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/edit`,
-              );
-            }}
+              )
+            }
             title="Editar"
           />
           <Menu.Item
             leadingIcon="delete"
-            onPress={() => {
-              setMenuVisible(false);
-              router.push(
+            onPress={() =>
+              navigateFromMenu(
                 `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/delete`,
-              );
-            }}
+              )
+            }
             title="Eliminar"
             titleStyle={{ color: theme.colors.error }}
           />

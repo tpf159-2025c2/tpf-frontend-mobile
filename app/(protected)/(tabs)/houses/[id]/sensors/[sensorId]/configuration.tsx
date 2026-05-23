@@ -15,8 +15,9 @@ import {
   HelperText,
   ActivityIndicator,
   useTheme,
-  Divider,
+  Card,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import houseService from '@/services/houseService';
@@ -153,102 +154,137 @@ export default function SensorConfigurationScreen() {
             </HelperText>
           ) : null}
 
-          {/* Enabled toggle */}
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.rowLabel}>
-              Notificaciones activas
-            </Text>
-            <Switch
-              value={enabled}
-              onValueChange={setEnabled}
-              color={theme.colors.primary}
-            />
-          </View>
+          <Card style={styles.card}>
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <Ionicons name="notifications-outline" size={16} color="#666" />
+                <Text variant="labelSmall" style={styles.cardTitle}>
+                  Notificaciones
+                </Text>
+              </View>
 
-          <Divider style={styles.divider} />
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleLabel}>
+                  <Text variant="bodyLarge">Notificaciones activas</Text>
+                  <Text variant="bodySmall" style={styles.hint}>
+                    Recibí alertas de este sensor en tu dispositivo.
+                  </Text>
+                </View>
+                <Switch
+                  value={enabled}
+                  onValueChange={setEnabled}
+                  color={theme.colors.primary}
+                />
+              </View>
+            </Card.Content>
+          </Card>
 
-          {/* Threshold */}
-          <Text variant="labelLarge" style={styles.sectionLabel}>
-            Umbral de alerta{' '}
-            <Text style={styles.optional}>(opcional)</Text>
-          </Text>
-          <Text variant="bodySmall" style={styles.sectionHint}>
-            Solo se notifica si el valor del sensor supera este número.
-          </Text>
-          <TextInput
-            mode="outlined"
-            placeholder="Sin umbral"
-            keyboardType="numeric"
-            value={threshold}
-            onChangeText={setThreshold}
-            disabled={saving}
-            style={styles.input}
-          />
+          <Card style={styles.card}>
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <Ionicons name="speedometer-outline" size={16} color="#666" />
+                <Text variant="labelSmall" style={styles.cardTitle}>
+                  Umbral de alerta
+                </Text>
+                <Text variant="labelSmall" style={styles.optional}>
+                  (opcional)
+                </Text>
+              </View>
 
-          <Divider style={styles.divider} />
-
-          {/* Time window */}
-          <Text variant="labelLarge" style={styles.sectionLabel}>
-            Ventana horaria{' '}
-            <Text style={styles.optional}>(opcional)</Text>
-          </Text>
-          <Text variant="bodySmall" style={styles.sectionHint}>
-            Solo se notifica si la lectura ocurre dentro de este horario.
-          </Text>
-
-          {Platform.OS === 'android' ? (
-            <View style={styles.timeRow}>
-              <Button
+              <Text variant="bodySmall" style={styles.hint}>
+                Solo se notifica si el valor del sensor supera este número.
+              </Text>
+              <TextInput
                 mode="outlined"
-                onPress={() => openTimePicker(timeFrom, setTimeFrom)}
+                placeholder="Sin umbral"
+                keyboardType="numeric"
+                value={threshold}
+                onChangeText={setThreshold}
                 disabled={saving}
-                style={styles.timeButton}
-              >
-                {timeFrom || 'Desde'}
-              </Button>
-              <Text style={styles.timeSep}>hasta</Text>
-              <Button
-                mode="outlined"
-                onPress={() => openTimePicker(timeTo, setTimeTo)}
-                disabled={saving}
-                style={styles.timeButton}
-              >
-                {timeTo || 'Hasta'}
-              </Button>
+                style={styles.input}
+              />
+            </Card.Content>
+          </Card>
+
+          <Card style={styles.card}>
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <Ionicons name="time-outline" size={16} color="#666" />
+                <Text variant="labelSmall" style={styles.cardTitle}>
+                  Ventana horaria
+                </Text>
+                <Text variant="labelSmall" style={styles.optional}>
+                  (opcional)
+                </Text>
+              </View>
+
+              <Text variant="bodySmall" style={styles.hint}>
+                Solo se notifica si la lectura ocurre dentro de este horario.
+              </Text>
+
+              {Platform.OS === 'android' ? (
+                <View style={styles.timeRow}>
+                  <Button
+                    mode="outlined"
+                    icon="clock-outline"
+                    onPress={() => openTimePicker(timeFrom, setTimeFrom)}
+                    disabled={saving}
+                    style={styles.timeButton}
+                  >
+                    {timeFrom || 'Desde'}
+                  </Button>
+                  <Text style={styles.timeSep}>hasta</Text>
+                  <Button
+                    mode="outlined"
+                    icon="clock-outline"
+                    onPress={() => openTimePicker(timeTo, setTimeTo)}
+                    disabled={saving}
+                    style={styles.timeButton}
+                  >
+                    {timeTo || 'Hasta'}
+                  </Button>
+                </View>
+              ) : (
+                <View style={styles.timeRow}>
+                  <TextInput
+                    mode="outlined"
+                    placeholder="HH:MM"
+                    value={timeFrom}
+                    onChangeText={setTimeFrom}
+                    disabled={saving}
+                    style={styles.timeInput}
+                    maxLength={5}
+                  />
+                  <Text style={styles.timeSep}>hasta</Text>
+                  <TextInput
+                    mode="outlined"
+                    placeholder="HH:MM"
+                    value={timeTo}
+                    onChangeText={setTimeTo}
+                    disabled={saving}
+                    style={styles.timeInput}
+                    maxLength={5}
+                  />
+                </View>
+              )}
+
               {(timeFrom || timeTo) ? (
                 <Button
                   mode="text"
                   compact
-                  onPress={() => { setTimeFrom(''); setTimeTo(''); }}
+                  icon="close"
+                  onPress={() => {
+                    setTimeFrom('');
+                    setTimeTo('');
+                  }}
                   disabled={saving}
+                  style={styles.clearTimeButton}
                 >
-                  Limpiar
+                  Limpiar horario
                 </Button>
               ) : null}
-            </View>
-          ) : (
-            <View style={styles.timeRow}>
-              <TextInput
-                mode="outlined"
-                placeholder="HH:MM"
-                value={timeFrom}
-                onChangeText={setTimeFrom}
-                disabled={saving}
-                style={styles.timeInput}
-                maxLength={5}
-              />
-              <Text style={styles.timeSep}>hasta</Text>
-              <TextInput
-                mode="outlined"
-                placeholder="HH:MM"
-                value={timeTo}
-                onChangeText={setTimeTo}
-                disabled={saving}
-                style={styles.timeInput}
-                maxLength={5}
-              />
-            </View>
-          )}
+            </Card.Content>
+          </Card>
 
           <View style={styles.actions}>
             <Button
@@ -287,33 +323,41 @@ const styles = StyleSheet.create({
   sensorName: {
     opacity: 0.6,
     marginBottom: 16,
+    textAlign: 'center',
   },
   errorText: {
     marginBottom: 8,
   },
-  row: {
+  card: {
+    marginBottom: 16,
+  },
+  cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    gap: 6,
+    marginBottom: 8,
   },
-  rowLabel: {
-    flex: 1,
-    marginRight: 12,
-  },
-  divider: {
-    marginVertical: 20,
-  },
-  sectionLabel: {
-    marginBottom: 4,
+  cardTitle: {
+    opacity: 0.6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   optional: {
-    fontWeight: '400',
     opacity: 0.5,
+    marginLeft: 4,
   },
-  sectionHint: {
+  hint: {
     opacity: 0.6,
     marginBottom: 12,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  toggleLabel: {
+    flex: 1,
+    marginRight: 12,
   },
   input: {
     marginBottom: 4,
@@ -322,7 +366,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
   },
   timeButton: {
     flex: 1,
@@ -333,10 +376,14 @@ const styles = StyleSheet.create({
   timeSep: {
     opacity: 0.6,
   },
+  clearTimeButton: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
   actions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 32,
+    marginTop: 16,
   },
   actionButton: {
     flex: 1,

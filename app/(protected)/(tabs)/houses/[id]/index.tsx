@@ -125,14 +125,23 @@ export default function HouseDetailsScreen() {
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
           anchor={
-            <Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} />
+            <Appbar.Action icon="dots-vertical" onPress={() => {
+              if (menuVisible) {
+                setMenuVisible(false);
+                requestAnimationFrame(() => setMenuVisible(true));
+              } else {
+                setMenuVisible(true);
+              }
+            }} />
           }
         >
           <Menu.Item
             leadingIcon="pencil"
             onPress={() => {
               setMenuVisible(false);
-              router.push(`/(protected)/(tabs)/houses/${id}/edit`);
+              requestAnimationFrame(() =>
+                router.push(`/(protected)/(tabs)/houses/${id}/edit`),
+              );
             }}
             title="Editar"
           />
@@ -140,7 +149,9 @@ export default function HouseDetailsScreen() {
             leadingIcon="delete"
             onPress={() => {
               setMenuVisible(false);
-              router.push(`/(protected)/(tabs)/houses/${id}/delete`);
+              requestAnimationFrame(() =>
+                router.push(`/(protected)/(tabs)/houses/${id}/delete`),
+              );
             }}
             title="Eliminar"
             titleStyle={{ color: theme.colors.error }}

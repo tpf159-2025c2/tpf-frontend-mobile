@@ -1,16 +1,26 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { TextInput, Button, HelperText, Appbar, useTheme, ActivityIndicator } from 'react-native-paper';
+import {
+  TextInput,
+  Button,
+  HelperText,
+  Appbar,
+  useTheme,
+  ActivityIndicator,
+  Card,
+  Text,
+  TouchableRipple,
+} from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
 import houseService from '@/services/houseService';
 import { SensorType, SENSOR_TYPE_LABELS } from '@/services/types';
 
-const SENSOR_TYPES: { value: SensorType; label: string }[] = [
-  { value: 'MOTION', label: SENSOR_TYPE_LABELS.MOTION },
-  { value: 'MAGNETIC', label: SENSOR_TYPE_LABELS.MAGNETIC },
-  { value: 'GAS', label: SENSOR_TYPE_LABELS.GAS },
-  { value: 'SOUND', label: SENSOR_TYPE_LABELS.SOUND },
+const SENSOR_TYPE_OPTIONS: { value: SensorType; label: string; icon: any }[] = [
+  { value: 'MOTION', label: SENSOR_TYPE_LABELS.MOTION, icon: 'eye-outline' },
+  { value: 'MAGNETIC', label: SENSOR_TYPE_LABELS.MAGNETIC, icon: 'magnet-outline' },
+  { value: 'GAS', label: SENSOR_TYPE_LABELS.GAS, icon: 'flame-outline' },
+  { value: 'SOUND', label: SENSOR_TYPE_LABELS.SOUND, icon: 'volume-medium-outline' },
 ];
 
 export default function EditSensorScreen() {
@@ -99,45 +109,92 @@ export default function EditSensorScreen() {
             </HelperText>
           ) : null}
 
-          <TextInput
-            label="Nombre"
-            value={name}
-            onChangeText={setName}
-            mode="outlined"
-            disabled={saving}
-            style={styles.input}
-          />
+          <Card style={styles.card}>
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <Ionicons name="information-circle-outline" size={16} color="#666" />
+                <Text variant="labelSmall" style={styles.cardTitle}>
+                  Información del sensor
+                </Text>
+              </View>
 
-          <View style={[styles.pickerContainer, { borderColor: theme.colors.outline }]}>
-            <Picker
-              selectedValue={type}
-              onValueChange={(value) => setType(value)}
-              enabled={!saving}
-              style={styles.picker}
-            >
-              {SENSOR_TYPES.map((t) => (
-                <Picker.Item key={t.value} label={t.label} value={t.value} />
-              ))}
-            </Picker>
-          </View>
+              <TextInput
+                label="Nombre"
+                value={name}
+                onChangeText={setName}
+                mode="outlined"
+                disabled={saving}
+                style={styles.input}
+              />
 
-          <TextInput
-            label="Hardware ID"
-            value={hardwareId}
-            onChangeText={setHardwareId}
-            mode="outlined"
-            disabled={saving}
-            style={styles.input}
-          />
+              <TextInput
+                label="Hardware ID"
+                value={hardwareId}
+                onChangeText={setHardwareId}
+                mode="outlined"
+                disabled={saving}
+                style={styles.input}
+              />
 
-          <TextInput
-            label="Ubicacion (opcional)"
-            value={location}
-            onChangeText={setLocation}
-            mode="outlined"
-            disabled={saving}
-            style={styles.input}
-          />
+              <TextInput
+                label="Ubicación (opcional)"
+                value={location}
+                onChangeText={setLocation}
+                mode="outlined"
+                disabled={saving}
+                style={styles.input}
+              />
+            </Card.Content>
+          </Card>
+
+          <Card style={styles.card}>
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <Ionicons name="grid-outline" size={16} color="#666" />
+                <Text variant="labelSmall" style={styles.cardTitle}>
+                  Tipo de sensor
+                </Text>
+              </View>
+
+              <View style={styles.typeGrid}>
+                {SENSOR_TYPE_OPTIONS.map((opt) => {
+                  const selected = type === opt.value;
+                  return (
+                    <TouchableRipple
+                      key={opt.value}
+                      onPress={() => setType(opt.value)}
+                      disabled={saving}
+                      style={[
+                        styles.typeCell,
+                        selected && {
+                          borderColor: theme.colors.primary,
+                          backgroundColor: theme.colors.primary + '15',
+                        },
+                      ]}
+                      borderless
+                    >
+                      <View style={styles.typeCellContent}>
+                        <Ionicons
+                          name={opt.icon}
+                          size={24}
+                          color={selected ? theme.colors.primary : '#666'}
+                        />
+                        <Text
+                          variant="bodyMedium"
+                          style={[
+                            styles.typeCellLabel,
+                            selected && { color: theme.colors.primary, fontWeight: '600' },
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </View>
+                    </TouchableRipple>
+                  );
+                })}
+              </View>
+            </Card.Content>
+          </Card>
 
           <View style={styles.actions}>
             <Button
@@ -182,22 +239,47 @@ const styles = StyleSheet.create({
   error: {
     marginBottom: 8,
   },
+  card: {
+    marginBottom: 16,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  cardTitle: {
+    opacity: 0.6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   input: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  pickerContainer: {
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  typeCell: {
+    width: '47%',
     borderWidth: 1,
-    borderRadius: 4,
-    marginBottom: 16,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
   },
-  picker: {
-    height: 50,
+  typeCellContent: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 6,
+  },
+  typeCellLabel: {
+    color: '#666',
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
-    marginTop: 16,
+    marginTop: 8,
   },
   button: {
     minWidth: 100,
