@@ -64,13 +64,51 @@ export const SENSOR_TYPE_COLORS: Record<SensorType, string> = {
 export interface SensorResponse {
   sensor: Sensor;
 }
+
+export interface SensorNotificationRule {
+  id: string;
+  threshold: number | null;
+  durationSeconds: number | null;
+  timeFrom: string | null;
+  timeTo: string | null;
+}
+
+export interface SensorNotificationPreferences {
+  enabled: boolean;
+  rules: SensorNotificationRule[];
+}
+
 export interface Sensor {
   id: string;
+  householdId?: number;
   name: string;
   type: SensorType;
   status: SensorStatus;
   hardwareId: string;
   location?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  notificationPreferences?: SensorNotificationPreferences;
+}
+
+export interface SensorNotificationRuleInput {
+  threshold?: number;
+  durationSeconds?: number;
+  timeFrom?: string;
+  timeTo?: string;
+}
+
+export interface UpdateSensorNotificationPreferencesData {
+  enabled: boolean;
+  rules: SensorNotificationRuleInput[];
+}
+
+export interface SensorNotificationPreferencesResponse {
+  preference: {
+    sensorId: string;
+    enabled: boolean;
+    rules: SensorNotificationRule[];
+  };
 }
 
 export interface SensorReading {
@@ -171,16 +209,4 @@ export interface NotificationPreferences {
   browser: boolean;
   mobile: boolean;
   email: boolean;
-}
-
-export interface SensorPreference {
-  sensorId: string;
-  enabled: boolean;
-  threshold: number | null;
-  timeFrom: string | null;
-  timeTo: string | null;
-}
-
-export interface SensorPreferencesResponse {
-  preferences: SensorPreference[];
 }

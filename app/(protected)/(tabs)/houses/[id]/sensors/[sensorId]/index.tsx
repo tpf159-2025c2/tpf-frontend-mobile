@@ -9,7 +9,6 @@ import {
   Chip,
   List,
   Card,
-  Menu,
   Modal,
   Portal,
 } from "react-native-paper";
@@ -24,6 +23,7 @@ import {
   SENSOR_STATUS_LABELS,
   SENSOR_STATUS_COLORS,
 } from "@/services/types";
+import ActionsBottomSheet from "@/components/ActionsBottomSheet";
 
 const SENSOR_IONICONS: Record<string, string> = {
   MOTION: "eye-outline",
@@ -46,7 +46,7 @@ export default function SensorDetailsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [readingsLoading, setReadingsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   type Preset = "today" | "week" | "month" | "custom";
   const [activePreset, setActivePreset] = useState<Preset | null>(null);
@@ -166,19 +166,7 @@ export default function SensorDetailsScreen() {
   const statusColor = SENSOR_STATUS_COLORS[sensor.status] ?? "#6c757d";
   const typeIcon = (SENSOR_IONICONS[sensor.type] as any) ?? "thermometer-outline";
 
-  const openMenu = () => {
-    if (menuVisible) {
-      setMenuVisible(false);
-      requestAnimationFrame(() => setMenuVisible(true));
-    } else {
-      setMenuVisible(true);
-    }
-  };
-
-  const navigateFromMenu = (path: string) => {
-    setMenuVisible(false);
-    requestAnimationFrame(() => router.push(path as any));
-  };
+  const sensorBasePath = `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}`;
 
   return (
     <View
@@ -187,43 +175,31 @@ export default function SensorDetailsScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="" />
-        <Menu
-          visible={menuVisible}
-          onDismiss={() => setMenuVisible(false)}
-          anchor={
-            <Appbar.Action icon="dots-vertical" onPress={openMenu} />
-          }
-        >
-          <Menu.Item
-            leadingIcon="bell-outline"
-            onPress={() =>
-              navigateFromMenu(
-                `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/configuration`,
-              )
-            }
-            title="Configurar"
-          />
-          <Menu.Item
-            leadingIcon="pencil"
-            onPress={() =>
-              navigateFromMenu(
-                `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/edit`,
-              )
-            }
-            title="Editar"
-          />
-          <Menu.Item
-            leadingIcon="delete"
-            onPress={() =>
-              navigateFromMenu(
-                `/(protected)/(tabs)/houses/${id}/sensors/${sensorId}/delete`,
-              )
-            }
-            title="Eliminar"
-            titleStyle={{ color: theme.colors.error }}
-          />
-        </Menu>
+        <Appbar.Action icon="dots-vertical" onPress={() => setSheetVisible(true)} />
       </Appbar.Header>
+
+      <ActionsBottomSheet
+        visible={sheetVisible}
+        onDismiss={() => setSheetVisible(false)}
+        actions={[
+          {
+            icon: "settings-outline",
+            label: "Configurar",
+            onPress: () => router.push(`${sensorBasePath}/configuration` as any),
+          },
+          {
+            icon: "pencil-outline",
+            label: "Editar",
+            onPress: () => router.push(`${sensorBasePath}/edit` as any),
+          },
+          {
+            icon: "trash-outline",
+            label: "Eliminar",
+            destructive: true,
+            onPress: () => router.push(`${sensorBasePath}/delete` as any),
+          },
+        ]}
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}
