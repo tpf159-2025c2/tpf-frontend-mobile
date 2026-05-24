@@ -8,7 +8,6 @@ import {
   Appbar,
   Card,
   Chip,
-  Menu,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -19,6 +18,7 @@ import {
   MEMBER_STATUS_LABELS,
   MEMBER_STATUS_COLORS,
 } from '@/services/types';
+import ActionsBottomSheet from '@/components/ActionsBottomSheet';
 
 const AVATAR_COLORS = ['#1D9E75', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444'];
 function avatarColor(name: string) {
@@ -35,7 +35,7 @@ export default function MemberDetailsScreen() {
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id || !memberId) return;
@@ -84,6 +84,8 @@ export default function MemberDetailsScreen() {
     );
   }
 
+  const memberBasePath = `/(protected)/(tabs)/houses/${id}/members/${memberId}`;
+
   const displayName = member.name || 'Pendiente';
   const initials = displayName
     .split(' ')
@@ -99,36 +101,26 @@ export default function MemberDetailsScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="" />
-        <Menu
-          visible={menuVisible}
-          onDismiss={() => setMenuVisible(false)}
-          anchor={
-            <Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} />
-          }
-        >
-          <Menu.Item
-            leadingIcon="pencil"
-            onPress={() => {
-              setMenuVisible(false);
-              router.push(
-                `/(protected)/(tabs)/houses/${id}/members/${memberId}/edit`,
-              );
-            }}
-            title="Editar"
-          />
-          <Menu.Item
-            leadingIcon="delete"
-            onPress={() => {
-              setMenuVisible(false);
-              router.push(
-                `/(protected)/(tabs)/houses/${id}/members/${memberId}/delete`,
-              );
-            }}
-            title="Eliminar"
-            titleStyle={{ color: theme.colors.error }}
-          />
-        </Menu>
+        <Appbar.Action icon="dots-vertical" onPress={() => setSheetVisible(true)} />
       </Appbar.Header>
+
+      <ActionsBottomSheet
+        visible={sheetVisible}
+        onDismiss={() => setSheetVisible(false)}
+        actions={[
+          {
+            icon: 'pencil-outline',
+            label: 'Editar',
+            onPress: () => router.push(`${memberBasePath}/edit` as any),
+          },
+          {
+            icon: 'trash-outline',
+            label: 'Eliminar',
+            destructive: true,
+            onPress: () => router.push(`${memberBasePath}/delete` as any),
+          },
+        ]}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.avatar, { backgroundColor: bgColor }]}>

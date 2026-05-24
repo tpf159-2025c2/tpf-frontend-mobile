@@ -1,7 +1,6 @@
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Appbar, useTheme, Card } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const STEPS = [
   {
@@ -39,11 +38,10 @@ const STEPS = [
 export default function NewHouseScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Agregar Casa" />
       </Appbar.Header>

@@ -10,13 +10,12 @@ import {
   Chip,
   List,
   Divider,
-  Menu,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import BaseCard from '@/components/BaseCard';
 import AddCard from '@/components/AddCard';
+import ActionsBottomSheet from '@/components/ActionsBottomSheet';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
 import {
   House,
@@ -60,14 +59,13 @@ export default function HouseDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [house, setHouse] = useState<House | null>(null);
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -123,32 +121,26 @@ export default function HouseDetailsScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title={house?.name || 'Casa'} titleStyle={{ fontSize: 16 }} />
-        <Menu
-          visible={menuVisible}
-          onDismiss={() => setMenuVisible(false)}
-          anchor={
-            <Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} />
-          }
-        >
-          <Menu.Item
-            leadingIcon="pencil"
-            onPress={() => {
-              setMenuVisible(false);
-              router.push(`/(protected)/(tabs)/houses/${id}/edit`);
-            }}
-            title="Editar"
-          />
-          <Menu.Item
-            leadingIcon="delete"
-            onPress={() => {
-              setMenuVisible(false);
-              router.push(`/(protected)/(tabs)/houses/${id}/delete`);
-            }}
-            title="Eliminar"
-            titleStyle={{ color: theme.colors.error }}
-          />
-        </Menu>
+        <Appbar.Action icon="dots-vertical" onPress={() => setSheetVisible(true)} />
       </Appbar.Header>
+
+      <ActionsBottomSheet
+        visible={sheetVisible}
+        onDismiss={() => setSheetVisible(false)}
+        actions={[
+          {
+            icon: 'pencil-outline',
+            label: 'Editar',
+            onPress: () => router.push(`/(protected)/(tabs)/houses/${id}/edit` as any),
+          },
+          {
+            icon: 'trash-outline',
+            label: 'Eliminar',
+            destructive: true,
+            onPress: () => router.push(`/(protected)/(tabs)/houses/${id}/delete` as any),
+          },
+        ]}
+      />
 
       <View style={styles.content}>
         <View style={styles.headerInfo}>
