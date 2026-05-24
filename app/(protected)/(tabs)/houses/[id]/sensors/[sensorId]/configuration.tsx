@@ -15,52 +15,99 @@ import {
   HelperText,
   ActivityIndicator,
   useTheme,
-  Divider,
+  Card,
+  IconButton,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import houseService from '@/services/houseService';
-import userService from '@/services/userService';
-import useAuthStore from '@/hooks/useAuthStore';
+import {
+  SensorNotificationRule,
+  SensorNotificationRuleInput,
+} from '@/services/types';
+
+type RuleDraft = {
+  uiId: string;
+  id?: string;
+  threshold: string;
+  durationSeconds: string;
+  timeFrom: string;
+  timeTo: string;
+};
+
+let nextUiId = 0;
+const newUiId = () => `tmp-${++nextUiId}`;
+
+const toDisplayTime = (value: string | null): string =>
+  value ? value.slice(0, 5) : '';
+
+const toApiTime = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
+};
+
+const ruleFromBackend = (rule: SensorNotificationRule): RuleDraft => ({
+  uiId: newUiId(),
+  id: rule.id,
+  threshold: rule.threshold != null ? String(rule.threshold) : '',
+  durationSeconds: rule.durationSeconds != null ? String(rule.durationSeconds) : '',
+  timeFrom: toDisplayTime(rule.timeFrom),
+  timeTo: toDisplayTime(rule.timeTo),
+});
+
+const emptyRule = (): RuleDraft => ({
+  uiId: newUiId(),
+  threshold: '',
+  durationSeconds: '',
+  timeFrom: '',
+  timeTo: '',
+});
 
 export default function SensorConfigurationScreen() {
   const router = useRouter();
   const { id, sensorId } = useLocalSearchParams<{ id: string; sensorId: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
-  const user = useAuthStore((state) => state.user);
 
   const [sensorName, setSensorName] = useState('');
   const [enabled, setEnabled] = useState(true);
-  const [threshold, setThreshold] = useState('');
-  const [timeFrom, setTimeFrom] = useState('');
-  const [timeTo, setTimeTo] = useState('');
+  const [rules, setRules] = useState<RuleDraft[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!user || !id || !sensorId) return;
+    if (!id || !sensorId) return;
 
-    Promise.all([
-      houseService.getSensor(id, sensorId),
-      userService.getSensorPreferences(user.id, id),
-    ])
-      .then(([sensorData, { preferences }]) => {
-        setSensorName(sensorData.name);
-        const match = preferences.find((p) => p.sensorId === sensorId);
-        if (match) {
-          setEnabled(match.enabled);
-          setThreshold(match.threshold != null ? String(match.threshold) : '');
-          setTimeFrom(match.timeFrom ? match.timeFrom.slice(0, 5) : '');
-          setTimeTo(match.timeTo ? match.timeTo.slice(0, 5) : '');
+    houseService
+      .getSensor(id, sensorId)
+      .then((sensor) => {
+        setSensorName(sensor.name);
+        const prefs = sensor.notificationPreferences;
+        if (prefs) {
+          setEnabled(prefs.enabled);
+          setRules(prefs.rules.map(ruleFromBackend));
         }
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Error al cargar datos'))
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : 'Error al cargar datos'),
+      )
       .finally(() => setLoading(false));
-  }, [user, id, sensorId]);
+  }, [id, sensorId]);
+
+  const updateRule = (uiId: string, patch: Partial<RuleDraft>) => {
+    setRules((prev) => prev.map((r) => (r.uiId === uiId ? { ...r, ...patch } : r)));
+  };
+
+  const addRule = () => {
+    setRules((prev) => [...prev, emptyRule()]);
+  };
+
+  const removeRule = (uiId: string) => {
+    setRules((prev) => prev.filter((r) => r.uiId !== uiId));
+  };
 
   const openTimePicker = (
     current: string,
@@ -84,34 +131,63 @@ export default function SensorConfigurationScreen() {
   };
 
   const handleSave = async () => {
-    if (!user || !sensorId) return;
+    if (!id || !sensorId) return;
 
-    const from = timeFrom.trim() || null;
-    const to = timeTo.trim() || null;
+    const payloadRules: SensorNotificationRuleInput[] = [];
 
-    if ((from && !to) || (!from && to)) {
-      setError('Debés completar ambos campos de horario o dejarlos vacíos.');
-      return;
-    }
+    for (const [index, rule] of rules.entries()) {
+      const from = rule.timeFrom.trim();
+      const to = rule.timeTo.trim();
+      if ((from && !to) || (!from && to)) {
+        setError(
+          `Regla ${index + 1}: completá ambos horarios o dejalos vacíos.`,
+        );
+        return;
+      }
 
-    const parsedThreshold =
-      threshold.trim() !== '' ? parseFloat(threshold) : null;
+      const thresholdRaw = rule.threshold.trim();
+      const threshold = thresholdRaw !== '' ? Number(thresholdRaw) : null;
+      if (thresholdRaw !== '' && !Number.isFinite(threshold)) {
+        setError(`Regla ${index + 1}: el umbral debe ser un número válido.`);
+        return;
+      }
 
-    if (threshold.trim() !== '' && isNaN(parsedThreshold!)) {
-      setError('El umbral debe ser un número válido.');
-      return;
+      const durationRaw = rule.durationSeconds.trim();
+      const durationSeconds = durationRaw !== '' ? parseInt(durationRaw, 10) : null;
+      if (durationRaw !== '' && (!Number.isInteger(durationSeconds) || durationSeconds! <= 0)) {
+        setError(`Regla ${index + 1}: la duración debe ser un entero mayor a 0.`);
+        return;
+      }
+
+      if (durationSeconds !== null && threshold === null) {
+        setError(`Regla ${index + 1}: si definís una duración, el umbral es obligatorio.`);
+        return;
+      }
+
+      if (threshold === null && durationSeconds === null && !from && !to) {
+        setError(`Regla ${index + 1}: definí al menos un umbral o una ventana horaria.`);
+        return;
+      }
+
+      const payloadRule: SensorNotificationRuleInput = {};
+      if (threshold !== null) payloadRule.threshold = threshold;
+      if (durationSeconds !== null) payloadRule.durationSeconds = durationSeconds;
+      if (from) payloadRule.timeFrom = toApiTime(from);
+      if (to) payloadRule.timeTo = toApiTime(to);
+
+      payloadRules.push(payloadRule);
     }
 
     setSaving(true);
     setError('');
 
     try {
-      await userService.updateSensorPreference(user.id, sensorId, {
-        enabled,
-        threshold: parsedThreshold,
-        timeFrom: from,
-        timeTo: to,
-      });
+      const result = await houseService.updateSensorNotificationPreferences(
+        id,
+        sensorId,
+        { enabled, rules: payloadRules },
+      );
+      setRules(result.rules.map(ruleFromBackend));
       router.back();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar preferencias');
@@ -130,7 +206,7 @@ export default function SensorConfigurationScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Mis alertas" />
       </Appbar.Header>
@@ -155,101 +231,184 @@ export default function SensorConfigurationScreen() {
             </HelperText>
           ) : null}
 
-          {/* Enabled toggle */}
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.rowLabel}>
-              Notificaciones activas
-            </Text>
-            <Switch
-              value={enabled}
-              onValueChange={setEnabled}
-              color={theme.colors.primary}
-            />
+          <Card style={styles.card}>
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <Ionicons name="notifications-outline" size={16} color="#666" />
+                <Text variant="labelSmall" style={styles.cardTitle}>
+                  Notificaciones
+                </Text>
+              </View>
+
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleLabel}>
+                  <Text variant="bodyLarge">Notificaciones activas</Text>
+                  <Text variant="bodySmall" style={styles.hint}>
+                    Recibí alertas de este sensor en tu dispositivo.
+                  </Text>
+                </View>
+                <Switch
+                  value={enabled}
+                  onValueChange={setEnabled}
+                  color={theme.colors.primary}
+                />
+              </View>
+            </Card.Content>
+          </Card>
+
+          <View style={styles.rulesHeader}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="options-outline" size={16} color="#666" />
+              <Text variant="labelSmall" style={styles.cardTitle}>
+                Reglas de alerta
+              </Text>
+            </View>
+            <Button
+              mode="text"
+              compact
+              icon="plus"
+              onPress={addRule}
+              disabled={saving}
+            >
+              Agregar
+            </Button>
           </View>
 
-          <Divider style={styles.divider} />
-
-          {/* Threshold */}
-          <Text variant="labelLarge" style={styles.sectionLabel}>
-            Umbral de alerta{' '}
-            <Text style={styles.optional}>(opcional)</Text>
-          </Text>
-          <Text variant="bodySmall" style={styles.sectionHint}>
-            Solo se notifica si el valor del sensor supera este número.
-          </Text>
-          <TextInput
-            mode="outlined"
-            placeholder="Sin umbral"
-            keyboardType="numeric"
-            value={threshold}
-            onChangeText={setThreshold}
-            disabled={saving}
-            style={styles.input}
-          />
-
-          <Divider style={styles.divider} />
-
-          {/* Time window */}
-          <Text variant="labelLarge" style={styles.sectionLabel}>
-            Ventana horaria{' '}
-            <Text style={styles.optional}>(opcional)</Text>
-          </Text>
-          <Text variant="bodySmall" style={styles.sectionHint}>
-            Solo se notifica si la lectura ocurre dentro de este horario.
-          </Text>
-
-          {Platform.OS === 'android' ? (
-            <View style={styles.timeRow}>
-              <Button
-                mode="outlined"
-                onPress={() => openTimePicker(timeFrom, setTimeFrom)}
-                disabled={saving}
-                style={styles.timeButton}
-              >
-                {timeFrom || 'Desde'}
-              </Button>
-              <Text style={styles.timeSep}>hasta</Text>
-              <Button
-                mode="outlined"
-                onPress={() => openTimePicker(timeTo, setTimeTo)}
-                disabled={saving}
-                style={styles.timeButton}
-              >
-                {timeTo || 'Hasta'}
-              </Button>
-              {(timeFrom || timeTo) ? (
-                <Button
-                  mode="text"
-                  compact
-                  onPress={() => { setTimeFrom(''); setTimeTo(''); }}
-                  disabled={saving}
-                >
-                  Limpiar
-                </Button>
-              ) : null}
-            </View>
+          {rules.length === 0 ? (
+            <Card style={styles.card}>
+              <Card.Content>
+                <Text variant="bodySmall" style={[styles.hint, styles.emptyText]}>
+                  No hay reglas configuradas. Agregá una para definir cuándo
+                  notificar.
+                </Text>
+              </Card.Content>
+            </Card>
           ) : (
-            <View style={styles.timeRow}>
-              <TextInput
-                mode="outlined"
-                placeholder="HH:MM"
-                value={timeFrom}
-                onChangeText={setTimeFrom}
-                disabled={saving}
-                style={styles.timeInput}
-                maxLength={5}
-              />
-              <Text style={styles.timeSep}>hasta</Text>
-              <TextInput
-                mode="outlined"
-                placeholder="HH:MM"
-                value={timeTo}
-                onChangeText={setTimeTo}
-                disabled={saving}
-                style={styles.timeInput}
-                maxLength={5}
-              />
-            </View>
+            rules.map((rule, index) => (
+              <Card key={rule.uiId} style={styles.card}>
+                <Card.Content>
+                  <View style={styles.ruleTitleRow}>
+                    <Text variant="titleSmall" style={styles.ruleTitle}>
+                      Regla {index + 1}
+                    </Text>
+                    <IconButton
+                      icon="close"
+                      size={18}
+                      onPress={() => removeRule(rule.uiId)}
+                      disabled={saving}
+                    />
+                  </View>
+
+                  <Text variant="labelSmall" style={styles.fieldLabel}>
+                    Umbral (opcional)
+                  </Text>
+                  <TextInput
+                    mode="outlined"
+                    placeholder="Sin umbral"
+                    keyboardType="numeric"
+                    value={rule.threshold}
+                    onChangeText={(v) => updateRule(rule.uiId, { threshold: v })}
+                    disabled={saving}
+                    style={styles.input}
+                    dense
+                  />
+
+                  <Text variant="labelSmall" style={styles.fieldLabel}>
+                    Duración mínima en segundos (opcional)
+                  </Text>
+                  <TextInput
+                    mode="outlined"
+                    placeholder="Sin duración mínima"
+                    keyboardType="numeric"
+                    value={rule.durationSeconds}
+                    onChangeText={(v) =>
+                      updateRule(rule.uiId, { durationSeconds: v })
+                    }
+                    disabled={saving}
+                    style={styles.input}
+                    dense
+                  />
+
+                  <Text variant="labelSmall" style={styles.fieldLabel}>
+                    Ventana horaria (opcional)
+                  </Text>
+                  {Platform.OS === 'android' ? (
+                    <View style={styles.timeRow}>
+                      <Button
+                        mode="outlined"
+                        icon="clock-outline"
+                        onPress={() =>
+                          openTimePicker(rule.timeFrom, (v) =>
+                            updateRule(rule.uiId, { timeFrom: v }),
+                          )
+                        }
+                        disabled={saving}
+                        style={styles.timeButton}
+                      >
+                        {rule.timeFrom || 'Desde'}
+                      </Button>
+                      <Text style={styles.timeSep}>hasta</Text>
+                      <Button
+                        mode="outlined"
+                        icon="clock-outline"
+                        onPress={() =>
+                          openTimePicker(rule.timeTo, (v) =>
+                            updateRule(rule.uiId, { timeTo: v }),
+                          )
+                        }
+                        disabled={saving}
+                        style={styles.timeButton}
+                      >
+                        {rule.timeTo || 'Hasta'}
+                      </Button>
+                    </View>
+                  ) : (
+                    <View style={styles.timeRow}>
+                      <TextInput
+                        mode="outlined"
+                        placeholder="HH:MM"
+                        value={rule.timeFrom}
+                        onChangeText={(v) =>
+                          updateRule(rule.uiId, { timeFrom: v })
+                        }
+                        disabled={saving}
+                        style={styles.timeInput}
+                        maxLength={5}
+                        dense
+                      />
+                      <Text style={styles.timeSep}>hasta</Text>
+                      <TextInput
+                        mode="outlined"
+                        placeholder="HH:MM"
+                        value={rule.timeTo}
+                        onChangeText={(v) =>
+                          updateRule(rule.uiId, { timeTo: v })
+                        }
+                        disabled={saving}
+                        style={styles.timeInput}
+                        maxLength={5}
+                        dense
+                      />
+                    </View>
+                  )}
+
+                  {rule.timeFrom || rule.timeTo ? (
+                    <Button
+                      mode="text"
+                      compact
+                      icon="close"
+                      onPress={() =>
+                        updateRule(rule.uiId, { timeFrom: '', timeTo: '' })
+                      }
+                      disabled={saving}
+                      style={styles.clearTimeButton}
+                    >
+                      Limpiar horario
+                    </Button>
+                  ) : null}
+                </Card.Content>
+              </Card>
+            ))
           )}
 
           <View style={styles.actions}>
@@ -289,33 +448,60 @@ const styles = StyleSheet.create({
   sensorName: {
     opacity: 0.6,
     marginBottom: 16,
+    textAlign: 'center',
   },
   errorText: {
     marginBottom: 8,
   },
-  row: {
+  card: {
+    marginBottom: 16,
+  },
+  cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 6,
+  },
+  cardTitle: {
+    opacity: 0.6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  rulesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  hint: {
+    opacity: 0.6,
+  },
+  emptyText: {
+    textAlign: 'center',
     paddingVertical: 8,
   },
-  rowLabel: {
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  toggleLabel: {
     flex: 1,
     marginRight: 12,
   },
-  divider: {
-    marginVertical: 20,
+  ruleTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  sectionLabel: {
-    marginBottom: 4,
+  ruleTitle: {
+    fontWeight: '600',
   },
-  optional: {
-    fontWeight: '400',
-    opacity: 0.5,
-  },
-  sectionHint: {
+  fieldLabel: {
     opacity: 0.6,
-    marginBottom: 12,
+    marginTop: 8,
+    marginBottom: 4,
   },
   input: {
     marginBottom: 4,
@@ -324,7 +510,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
   },
   timeButton: {
     flex: 1,
@@ -335,10 +520,14 @@ const styles = StyleSheet.create({
   timeSep: {
     opacity: 0.6,
   },
+  clearTimeButton: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
   actions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 32,
+    marginTop: 16,
   },
   actionButton: {
     flex: 1,

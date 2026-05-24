@@ -1,4 +1,4 @@
-import { API_URL } from "./config";
+import { API_URL, API_URL_V2 } from "./config";
 import authService from "./authService";
 import {
   House,
@@ -12,6 +12,8 @@ import {
   CreateMemberData,
   UpdateMemberData,
   ReadingsResponse,
+  UpdateSensorNotificationPreferencesData,
+  SensorNotificationPreferencesResponse,
 } from "./types";
 
 const log = (method: string, detail?: string) => {
@@ -145,7 +147,7 @@ class HouseService {
   async getSensor(houseId: string, sensorId: string): Promise<Sensor> {
     log("getSensor", `house=${houseId} sensor=${sensorId}`);
     const response = await authService.fetchWithAuth(
-      `${API_URL}/households/${houseId}/sensors/${sensorId}`,
+      `${API_URL_V2}/households/${houseId}/sensors/${sensorId}`,
     );
 
     if (!response.ok) {
@@ -156,6 +158,35 @@ class HouseService {
 
     const sensorData: SensorResponse = await response.json();
     return sensorData.sensor;
+  }
+
+  async updateSensorNotificationPreferences(
+    houseId: string,
+    sensorId: string,
+    data: UpdateSensorNotificationPreferencesData,
+  ): Promise<SensorNotificationPreferencesResponse["preference"]> {
+    log(
+      "updateSensorNotificationPreferences",
+      `house=${houseId} sensor=${sensorId} rules=${data.rules.length}`,
+    );
+    const response = await authService.fetchWithAuth(
+      `${API_URL_V2}/households/${houseId}/sensors/${sensorId}/notification-preferences`,
+      { method: "PUT", body: JSON.stringify(data) },
+    );
+
+    if (!response.ok) {
+      const body = await response.json();
+      logError(
+        "updateSensorNotificationPreferences",
+        response.status,
+        body,
+        `house=${houseId} sensor=${sensorId}`,
+      );
+      throw new Error(body.message || "Error al actualizar las preferencias del sensor");
+    }
+
+    const json: SensorNotificationPreferencesResponse = await response.json();
+    return json.preference;
   }
 
   async createSensor(

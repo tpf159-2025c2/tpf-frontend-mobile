@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Button, HelperText, Appbar, useTheme, Text } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import houseService from '@/services/houseService';
 import { MemberRole, MEMBER_ROLE_LABELS } from '@/services/types';
@@ -17,7 +16,6 @@ export default function EditMemberScreen() {
   const router = useRouter();
   const { id, memberId } = useLocalSearchParams<{ id: string; memberId: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [role, setRole] = useState<MemberRole>('MEMBER');
   const [error, setError] = useState('');
@@ -39,7 +37,7 @@ export default function EditMemberScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Editar Rol" />
       </Appbar.Header>

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { TextInput, Button, HelperText, Appbar, useTheme } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import houseService from '@/services/houseService';
 import { MemberRole, MEMBER_ROLE_LABELS } from '@/services/types';
@@ -17,7 +16,6 @@ export default function NewMemberScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<MemberRole>('MEMBER');
@@ -48,7 +46,7 @@ export default function NewMemberScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Agregar Miembro" />
       </Appbar.Header>

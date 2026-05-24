@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button, Appbar, useTheme, Card } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
 
 export default function DeleteMemberScreen() {
   const router = useRouter();
   const { id, memberId } = useLocalSearchParams<{ id: string; memberId: string }>();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,7 +29,7 @@ export default function DeleteMemberScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header style={{ marginTop: insets.top }}>
+      <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title="Eliminar Miembro" />
       </Appbar.Header>
