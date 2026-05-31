@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "./config";
 import { Credentials, RegisterData, AuthResponse } from "./types";
 import { router } from "expo-router";
+import useAuthStore from "@/hooks/useAuthStore";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -175,6 +176,11 @@ class AuthService {
         response = await makeRequest(newToken);
       } catch {
         await this.clearAuth();
+        useAuthStore.setState({
+          isAuthenticated: false,
+          user: null,
+          loading: false,
+        });
         router.replace("/login");
         throw new Error("Sesion expirada");
       }

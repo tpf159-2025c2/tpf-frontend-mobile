@@ -106,6 +106,7 @@ export default function SensorConfigurationScreen() {
   const [enabled, setEnabled] = useState(true);
   const [rules, setRules] = useState<RuleDraft[]>([]);
     const [sensorType, setSensorType] = useState<SensorType | ''>('');
+  const pickerTextColor = theme.colors.onSurface;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -383,7 +384,9 @@ export default function SensorConfigurationScreen() {
                           updateRule(rule.uiId, { threshold: String(value) })
                         }
                         enabled={!saving}
-                        style={styles.select}
+                        style={[styles.select, { color: pickerTextColor }]}
+                        dropdownIconColor={pickerTextColor}
+                        itemStyle={{ color: pickerTextColor }}
                       >
                         {getStateOptions(sensorType).map((option) => (
                           <Picker.Item

@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   sensorsScroll: {
-    height: 200,
+    height: 215,
   },
   sensorsGrid: {
     paddingHorizontal: 12,
