@@ -50,6 +50,19 @@ class UserService {
     return response.json();
   }
 
+  async registerPushToken(userId: string, token: string | null): Promise<void> {
+    log("registerPushToken", `user=${userId} token=${token ?? 'null'}`);
+    const response = await authService.fetchWithAuth(
+      `${API_URL}/users/${userId}/notification-preferences/mobile-token`,
+      { method: "POST", body: JSON.stringify({ token }) },
+    );
+
+    if (!response.ok) {
+      const body = await response.json();
+      logError("registerPushToken", response.status, body, `user=${userId}`);
+      throw new Error(body.error || "Error al registrar push token");
+    }
+  }
 }
 
 export default new UserService();
