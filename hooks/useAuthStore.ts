@@ -8,11 +8,13 @@ interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   loading: boolean;
+  hydrated: boolean;
   login: (credentials: Credentials) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<boolean>;
   setLoading: (loading: boolean) => void;
+  setHydrated: (hydrated: boolean) => void;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -21,6 +23,7 @@ const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       user: null,
       loading: true,
+      hydrated: false,
 
       login: async (credentials: Credentials) => {
         const response = await authService.login(credentials);
@@ -53,10 +56,15 @@ const useAuthStore = create<AuthState>()(
       },
 
       setLoading: (loading: boolean) => set({ loading }),
+
+      setHydrated: (hydrated: boolean) => set({ hydrated }),
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated(true);
+      },
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,

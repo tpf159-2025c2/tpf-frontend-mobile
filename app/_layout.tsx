@@ -43,11 +43,11 @@ export const lightTheme = {
     },
   },
   roundness: 10,
-  version: 3,
+  version: 3 as const,
   fonts: {
     ...DefaultTheme.fonts,
     bodyLarge: { fontFamily: "System", fontSize: 16 },
-    titleMedium: { fontFamily: "System", fontWeight: "600" },
+    titleMedium: { fontFamily: "System", fontWeight: "600" as const },
   },
 };
 
@@ -55,15 +55,19 @@ export default function RootLayout() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const setLoading = useAuthStore((state) => state.setLoading);
   const loading = useAuthStore((state) => state.loading);
+  const hydrated = useAuthStore((state) => state.hydrated);
 
   useEffect(() => {
-    checkAuth().finally(() => setLoading(false));
-  }, []);
+    if (!hydrated) return;
+
+    setLoading(true);
+    checkAuth();
+  }, [checkAuth, hydrated, setLoading]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <PaperProvider theme={lightTheme}>
-        {loading ? (
+        {!hydrated || loading ? (
           <LoadingScreen />
         ) : (
           <Stack screenOptions={{ headerShown: false }}>
