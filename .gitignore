@@ -55,3 +55,6 @@ logs/
 .expo-dev-client/
 .expo-packa
 
+# Firebase credentials
+fcm-service-account.json
+
