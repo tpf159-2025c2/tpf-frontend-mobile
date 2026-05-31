@@ -15,6 +15,9 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://tpf-backend-3f5b66fb6904.herokuapp.com/api/v1"
       }
     },
     "production": {
