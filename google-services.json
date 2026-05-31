@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "228924504527",
+    "project_id": "supervision-del-hogar",
+    "storage_bucket": "supervision-del-hogar.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:228924504527:android:43dfdcf420eb8353c2faba",
+        "android_client_info": {
+          "package_name": "com.tpf159.supervisionhogar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDT9JXvxEP5azfoXmrEbtKSzKo_JQZ0XQU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

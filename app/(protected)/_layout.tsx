@@ -3,8 +3,10 @@ import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useTheme } from "react-native-paper";
 import useAuthStore from "@/hooks/useAuthStore";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function ProtectedLayout() {
+  useNotifications();
   const theme = useTheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const loading = useAuthStore((state) => state.loading);
