@@ -70,5 +70,6 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    marginTop: 'auto',
   },
 });

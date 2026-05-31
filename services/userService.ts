@@ -17,7 +17,7 @@ class UserService {
   async getNotificationPreferences(userId: string): Promise<NotificationPreferences> {
     log("getNotificationPreferences", `user=${userId}`);
     const response = await authService.fetchWithAuth(
-      `${API_URL}/users/${userId}/notification-preferences`,
+      `${API_URL}/notification-preferences`,
     );
 
     if (!response.ok) {
@@ -37,7 +37,7 @@ class UserService {
   ): Promise<NotificationPreferences> {
     log("updateNotificationPreferences", `user=${userId} ${JSON.stringify(preferences)}`);
     const response = await authService.fetchWithAuth(
-      `${API_URL}/users/${userId}/notification-preferences`,
+      `${API_URL}/notification-preferences`,
       { method: "PATCH", body: JSON.stringify(preferences) },
     );
 

@@ -85,6 +85,8 @@ export interface Sensor {
   type: SensorType;
   status: SensorStatus;
   hardwareId: string;
+  online?: boolean;
+  batteryLevel?: number | null;
   location?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -177,6 +179,9 @@ export interface House {
   id: string;
   name: string;
   address: string;
+  lastOnlineAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateHouseData {

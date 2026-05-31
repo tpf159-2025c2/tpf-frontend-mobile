@@ -320,12 +320,19 @@ class HouseService {
     );
 
     if (!response.ok) {
-      const body = await response.json();
+      const body = await response.json().catch(() => ({}));
       logError("createMember", response.status, body, `house=${houseId}`);
       throw new Error(body.message || "Error al agregar miembro");
     }
 
-    return response.json();
+    // Some backends return 201 without JSON body; avoid crashing on JSON parse.
+    const raw = await response.text();
+    if (!raw) return {} as Member;
+    try {
+      return JSON.parse(raw) as Member;
+    } catch {
+      return {} as Member;
+    }
   }
 
   async updateMember(

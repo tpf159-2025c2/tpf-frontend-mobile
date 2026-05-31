@@ -14,6 +14,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import houseService from '@/services/houseService';
 import { House } from '@/services/types';
 
+const ONLINE_WINDOW_MS = 10 * 60 * 1000;
+
+function getHouseConnectionState(lastOnlineAt?: string | null) {
+  if (!lastOnlineAt) {
+    return { isOnline: false, label: 'Offline', color: '#9CA3AF', bgColor: '#9CA3AF20' };
+  }
+
+  const lastOnlineTime = new Date(lastOnlineAt).getTime();
+  if (Number.isNaN(lastOnlineTime)) {
+    return { isOnline: false, label: 'Offline', color: '#9CA3AF', bgColor: '#9CA3AF20' };
+  }
+
+  const isOnline = Date.now() - lastOnlineTime < ONLINE_WINDOW_MS;
+  return isOnline
+    ? { isOnline: true, label: 'Online', color: '#1D9E75', bgColor: '#1D9E7520' }
+    : { isOnline: false, label: 'Offline', color: '#9CA3AF', bgColor: '#9CA3AF20' };
+}
+
 export default function HousesListScreen() {
   const router = useRouter();
   const theme = useTheme();
@@ -29,6 +47,7 @@ export default function HousesListScreen() {
   const fetchHouses = useCallback(async () => {
     try {
       const data = await houseService.getHouses();
+      console.log('Casas obtenidas:', data);
       setHouses(data);
     } catch (error) {
       console.error('Error al obtener casas:', error);
@@ -69,11 +88,14 @@ export default function HousesListScreen() {
 
   const displayedHouses = searchResults !== null ? searchResults : houses;
 
-  const renderHouseCard = ({ item }: { item: House }) => (
+  const renderHouseCard = ({ item }: { item: House }) => {
+    const connectionState = getHouseConnectionState(item.lastOnlineAt);
+
+    return (
     <BaseCard
       style={styles.card}
       onPress={() => router.push(`/(protected)/(tabs)/houses/${item.id}`)}
-      bannerColor="#1D9E75"
+      bannerColor={connectionState.isOnline ? '#1D9E75' : '#9CA3AF'}
       bannerHeight={70}
       bannerContent={<Ionicons name="home" size={40} color="rgba(255,255,255,0.9)" />}
       bodyContent={
@@ -82,6 +104,16 @@ export default function HousesListScreen() {
           <View style={styles.cardAddressRow}>
             <Ionicons name="git-network-outline" size={12} color="#999" />
             <RNText style={styles.cardAddress}>{item.address}</RNText>
+          </View>
+          <View style={styles.cardConnectionRow}>
+            <Ionicons
+              name={connectionState.isOnline ? 'wifi' : 'wifi-outline'}
+              size={12}
+              color={connectionState.color}
+            />
+            <RNText style={[styles.cardConnectionText, { color: connectionState.color }]}>
+              {connectionState.isOnline ? 'En línea' : 'Sin conexión'}
+            </RNText>
           </View>
         </>
       }
@@ -92,7 +124,8 @@ export default function HousesListScreen() {
         </>
       }
     />
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -215,6 +248,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1D9E75',
+  },
+  cardConnectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  cardConnectionText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   addCardContainer: {
     alignItems: 'center',

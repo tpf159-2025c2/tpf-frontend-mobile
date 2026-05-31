@@ -23,6 +23,11 @@ export default function NewMemberScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
+    if (!id) {
+      setError('No se pudo identificar la casa');
+      return;
+    }
+
     if (!email.trim()) {
       setError('Por favor ingresa un email');
       return;
@@ -32,11 +37,15 @@ export default function NewMemberScreen() {
     setLoading(true);
 
     try {
-      await houseService.createMember(id!, {
+      await houseService.createMember(id, {
         email: email.trim(),
         role,
       });
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace(`/(protected)/(tabs)/houses/${id}` as any);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al agregar miembro');
     } finally {

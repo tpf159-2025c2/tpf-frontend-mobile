@@ -25,12 +25,32 @@ import houseService from '@/services/houseService';
 import {
   SensorNotificationRule,
   SensorNotificationRuleInput,
+  SensorType,
 } from '@/services/types';
+import { Picker } from '@react-native-picker/picker';
+
+const VALUE_LABELS: Partial<Record<SensorType, Record<string, string>>> = {
+  MAGNETIC: { 1: 'ABIERTA', 0: 'CERRADA' },
+  GAS: { 1: 'FUGA DETECTADA', 0: 'SIN FUGA' },
+  SOUND: { 1: 'SONIDO DETECTADO', 0: 'SILENCIOSO' },
+  MOTION: { 1: 'MOVIMIENTO DETECTADO', 0: 'SIN MOVIMIENTO' },
+};
+
+const getStateOptions = (sensorType: SensorType | '') => {
+  const labels = sensorType ? VALUE_LABELS[sensorType] || {} : {};
+  return Object.keys(labels)
+    .map((value) => ({ value, label: labels[value] }))
+    .sort((a, b) => Number(b.value) - Number(a.value));
+};
+
+const hasStateOptions = (sensorType: SensorType | '') => getStateOptions(sensorType).length > 0;
 
 type RuleDraft = {
   uiId: string;
   id?: string;
   threshold: string;
+  durationHours: string;
+  durationMinutes: string;
   durationSeconds: string;
   timeFrom: string;
   timeTo: string;
@@ -52,7 +72,12 @@ const ruleFromBackend = (rule: SensorNotificationRule): RuleDraft => ({
   uiId: newUiId(),
   id: rule.id,
   threshold: rule.threshold != null ? String(rule.threshold) : '',
-  durationSeconds: rule.durationSeconds != null ? String(rule.durationSeconds) : '',
+  durationHours:
+    rule.durationSeconds != null ? String(Math.floor(rule.durationSeconds / 3600)) : '',
+  durationMinutes:
+    rule.durationSeconds != null ? String(Math.floor((rule.durationSeconds % 3600) / 60)) : '',
+  durationSeconds:
+    rule.durationSeconds != null ? String(rule.durationSeconds % 60) : '',
   timeFrom: toDisplayTime(rule.timeFrom),
   timeTo: toDisplayTime(rule.timeTo),
 });
@@ -60,10 +85,17 @@ const ruleFromBackend = (rule: SensorNotificationRule): RuleDraft => ({
 const emptyRule = (): RuleDraft => ({
   uiId: newUiId(),
   threshold: '',
+  durationHours: '',
+  durationMinutes: '',
   durationSeconds: '',
   timeFrom: '',
   timeTo: '',
 });
+
+const hasSustainedDuration = (rule: RuleDraft): boolean =>
+  rule.durationHours.trim() !== '' ||
+  rule.durationMinutes.trim() !== '' ||
+  rule.durationSeconds.trim() !== '';
 
 export default function SensorConfigurationScreen() {
   const router = useRouter();
@@ -73,6 +105,7 @@ export default function SensorConfigurationScreen() {
   const [sensorName, setSensorName] = useState('');
   const [enabled, setEnabled] = useState(true);
   const [rules, setRules] = useState<RuleDraft[]>([]);
+    const [sensorType, setSensorType] = useState<SensorType | ''>('');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -80,11 +113,11 @@ export default function SensorConfigurationScreen() {
 
   useEffect(() => {
     if (!id || !sensorId) return;
-
     houseService
       .getSensor(id, sensorId)
       .then((sensor) => {
         setSensorName(sensor.name);
+        setSensorType(sensor.type);
         const prefs = sensor.notificationPreferences;
         if (prefs) {
           setEnabled(prefs.enabled);
@@ -152,11 +185,25 @@ export default function SensorConfigurationScreen() {
         return;
       }
 
-      const durationRaw = rule.durationSeconds.trim();
-      const durationSeconds = durationRaw !== '' ? parseInt(durationRaw, 10) : null;
-      if (durationRaw !== '' && (!Number.isInteger(durationSeconds) || durationSeconds! <= 0)) {
-        setError(`Regla ${index + 1}: la duración debe ser un entero mayor a 0.`);
-        return;
+      const hRaw = (rule.durationHours || '').trim();
+      const mRaw = (rule.durationMinutes || '').trim();
+      const sRaw = (rule.durationSeconds || '').trim();
+
+      const hasDuration = hRaw !== '' || mRaw !== '' || sRaw !== '';
+      let durationSeconds: number | null = null;
+      if (hasDuration) {
+        const h = hRaw !== '' ? parseInt(hRaw, 10) : 0;
+        const m = mRaw !== '' ? parseInt(mRaw, 10) : 0;
+        const s = sRaw !== '' ? parseInt(sRaw, 10) : 0;
+        if (!Number.isInteger(h) || h < 0 || !Number.isInteger(m) || m < 0 || m >= 60 || !Number.isInteger(s) || s < 0 || s >= 60) {
+          setError(`Regla ${index + 1}: la duración debe ser valores enteros válidos (m/s 0-59).`);
+          return;
+        }
+        durationSeconds = h * 3600 + m * 60 + s;
+        if (durationSeconds <= 0) {
+          setError(`Regla ${index + 1}: la duración debe ser mayor a 0.`);
+          return;
+        }
       }
 
       if (durationSeconds !== null && threshold === null) {
@@ -172,8 +219,10 @@ export default function SensorConfigurationScreen() {
       const payloadRule: SensorNotificationRuleInput = {};
       if (threshold !== null) payloadRule.threshold = threshold;
       if (durationSeconds !== null) payloadRule.durationSeconds = durationSeconds;
-      if (from) payloadRule.timeFrom = toApiTime(from);
-      if (to) payloadRule.timeTo = toApiTime(to);
+      const apiFrom = from ? toApiTime(from) : null;
+      const apiTo = to ? toApiTime(to) : null;
+      if (apiFrom) payloadRule.timeFrom = apiFrom;
+      if (apiTo) payloadRule.timeTo = apiTo;
 
       payloadRules.push(payloadRule);
     }
@@ -288,9 +337,33 @@ export default function SensorConfigurationScreen() {
               <Card key={rule.uiId} style={styles.card}>
                 <Card.Content>
                   <View style={styles.ruleTitleRow}>
-                    <Text variant="titleSmall" style={styles.ruleTitle}>
-                      Regla {index + 1}
-                    </Text>
+                    <View style={styles.ruleTitleGroup}>
+                      <Text variant="titleSmall" style={styles.ruleTitle}>
+                        Regla {index + 1}
+                      </Text>
+                      <View
+                        style={[
+                          styles.ruleBadge,
+                          hasSustainedDuration(rule)
+                            ? styles.ruleBadgeSustained
+                            : styles.ruleBadgeImmediate,
+                        ]}
+                      >
+                        <Ionicons
+                          name={hasSustainedDuration(rule) ? 'time-outline' : 'flash-outline'}
+                          size={12}
+                          color={hasSustainedDuration(rule) ? '#d97706' : '#1D9E75'}
+                        />
+                        <Text
+                          style={[
+                            styles.ruleBadgeText,
+                            hasSustainedDuration(rule) && styles.ruleBadgeTextSustained,
+                          ]}
+                        >
+                          {hasSustainedDuration(rule) ? 'Sostenida' : 'Inmediata'}
+                        </Text>
+                      </View>
+                    </View>
                     <IconButton
                       icon="close"
                       size={18}
@@ -300,34 +373,77 @@ export default function SensorConfigurationScreen() {
                   </View>
 
                   <Text variant="labelSmall" style={styles.fieldLabel}>
-                    Umbral (opcional)
+                    Estado
                   </Text>
-                  <TextInput
-                    mode="outlined"
-                    placeholder="Sin umbral"
-                    keyboardType="numeric"
-                    value={rule.threshold}
-                    onChangeText={(v) => updateRule(rule.uiId, { threshold: v })}
-                    disabled={saving}
-                    style={styles.input}
-                    dense
-                  />
+                  {hasStateOptions(sensorType) ? (
+                    <View style={styles.selectContainer}>
+                      <Picker
+                        selectedValue={rule.threshold}
+                        onValueChange={(value) =>
+                          updateRule(rule.uiId, { threshold: String(value) })
+                        }
+                        enabled={!saving}
+                        style={styles.select}
+                      >
+                        {getStateOptions(sensorType).map((option) => (
+                          <Picker.Item
+                            key={option.value}
+                            label={option.label}
+                            value={option.value}
+                          />
+                        ))}
+                      </Picker>
+                    </View>
+                  ) : (
+                    <TextInput
+                      mode="outlined"
+                      placeholder="Sin estado"
+                      keyboardType="numeric"
+                      value={rule.threshold}
+                      onChangeText={(v) => updateRule(rule.uiId, { threshold: v })}
+                      disabled={saving}
+                      style={styles.input}
+                      dense
+                    />
+                  )}
 
                   <Text variant="labelSmall" style={styles.fieldLabel}>
-                    Duración mínima en segundos (opcional)
+                    Duración (h/m/s) (opcional)
                   </Text>
-                  <TextInput
-                    mode="outlined"
-                    placeholder="Sin duración mínima"
-                    keyboardType="numeric"
-                    value={rule.durationSeconds}
-                    onChangeText={(v) =>
-                      updateRule(rule.uiId, { durationSeconds: v })
-                    }
-                    disabled={saving}
-                    style={styles.input}
-                    dense
-                  />
+                  <View style={styles.durationRow}>
+                    <TextInput
+                      mode="outlined"
+                      placeholder="hh"
+                      keyboardType="numeric"
+                      value={rule.durationHours}
+                      onChangeText={(v) => updateRule(rule.uiId, { durationHours: v })}
+                      disabled={saving}
+                      style={[styles.input, styles.durationInput]}
+                      dense
+                    />
+                    <Text style={styles.timeSep}>:</Text>
+                    <TextInput
+                      mode="outlined"
+                      placeholder="mm"
+                      keyboardType="numeric"
+                      value={rule.durationMinutes}
+                      onChangeText={(v) => updateRule(rule.uiId, { durationMinutes: v })}
+                      disabled={saving}
+                      style={[styles.input, styles.durationInput]}
+                      dense
+                    />
+                    <Text style={styles.timeSep}>:</Text>
+                    <TextInput
+                      mode="outlined"
+                      placeholder="ss"
+                      keyboardType="numeric"
+                      value={rule.durationSeconds}
+                      onChangeText={(v) => updateRule(rule.uiId, { durationSeconds: v })}
+                      disabled={saving}
+                      style={[styles.input, styles.durationInput]}
+                      dense
+                    />
+                  </View>
 
                   <Text variant="labelSmall" style={styles.fieldLabel}>
                     Ventana horaria (opcional)
@@ -495,8 +611,39 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
+  ruleTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    marginRight: 8,
+  },
   ruleTitle: {
     fontWeight: '600',
+  },
+  ruleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  ruleBadgeImmediate: {
+    backgroundColor: '#e8f8f2',
+  },
+  ruleBadgeSustained: {
+    backgroundColor: '#fff3e0',
+  },
+  ruleBadgeText: {
+    color: '#1D9E75',
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  ruleBadgeTextSustained: {
+    color: '#d97706',
   },
   fieldLabel: {
     opacity: 0.6,
@@ -506,10 +653,34 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 4,
   },
+  selectContainer: {
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#9FE1CB',
+    borderRadius: 8,
+    minHeight: 56,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  select: {
+    width: '100%',
+    minHeight: 56,
+    paddingHorizontal: 8,
+  },
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  durationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    gap: 8,
+  },
+  durationInput: {
+    flex: 1,
+    minWidth: 0,
   },
   timeButton: {
     flex: 1,

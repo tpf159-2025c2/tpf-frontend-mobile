@@ -132,7 +132,7 @@ export default function EditSensorScreen() {
                 value={hardwareId}
                 onChangeText={setHardwareId}
                 mode="outlined"
-                disabled={saving}
+                disabled
                 style={styles.input}
               />
 
@@ -147,54 +147,6 @@ export default function EditSensorScreen() {
             </Card.Content>
           </Card>
 
-          <Card style={styles.card}>
-            <Card.Content>
-              <View style={styles.cardHeader}>
-                <Ionicons name="grid-outline" size={16} color="#666" />
-                <Text variant="labelSmall" style={styles.cardTitle}>
-                  Tipo de sensor
-                </Text>
-              </View>
-
-              <View style={styles.typeGrid}>
-                {SENSOR_TYPE_OPTIONS.map((opt) => {
-                  const selected = type === opt.value;
-                  return (
-                    <TouchableRipple
-                      key={opt.value}
-                      onPress={() => setType(opt.value)}
-                      disabled={saving}
-                      style={[
-                        styles.typeCell,
-                        selected && {
-                          borderColor: theme.colors.primary,
-                          backgroundColor: theme.colors.primary + '15',
-                        },
-                      ]}
-                      borderless
-                    >
-                      <View style={styles.typeCellContent}>
-                        <Ionicons
-                          name={opt.icon}
-                          size={24}
-                          color={selected ? theme.colors.primary : '#666'}
-                        />
-                        <Text
-                          variant="bodyMedium"
-                          style={[
-                            styles.typeCellLabel,
-                            selected && { color: theme.colors.primary, fontWeight: '600' },
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </View>
-                    </TouchableRipple>
-                  );
-                })}
-              </View>
-            </Card.Content>
-          </Card>
 
           <View style={styles.actions}>
             <Button

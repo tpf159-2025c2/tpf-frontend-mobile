@@ -15,13 +15,15 @@ import { Ionicons } from '@expo/vector-icons';
 import BaseCard from '@/components/BaseCard';
 import AddCard from '@/components/AddCard';
 import ActionsBottomSheet from '@/components/ActionsBottomSheet';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import houseService from '@/services/houseService';
 import {
   House,
   Sensor,
+  SensorReading,
   Member,
   SENSOR_TYPE_LABELS,
+  SENSOR_TYPE_COLORS,
   SENSOR_STATUS_LABELS,
   SENSOR_STATUS_COLORS,
   MEMBER_ROLE_LABELS,
@@ -36,17 +38,46 @@ const SENSOR_IONICONS: Record<string, string> = {
   SOUND: 'volume-medium-outline',
 };
 
-const STATUS_ICON: Record<string, string> = {
-  ACCEPTED: 'ellipse',
-  PENDING: 'time-outline',
-  REJECTED: 'close-circle-outline',
+
+
+const ONLINE_COLOR = '#1D9E75';
+const OFFLINE_COLOR = '#9CA3AF';
+
+const VALUE_COLORS: Record<string, string> = {
+  '1': '#e67e22',
+  '0': '#28a745',
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  ACCEPTED: '#1D9E75',
-  PENDING: '#EF9F27',
-  REJECTED: '#dc3545',
+const READING_VALUE_LABELS: Partial<Record<string, Record<string, string>>> = {
+  MAGNETIC: { 1: 'Abierta', 0: 'Cerrada' },
+  GAS: { 1: 'Fuga detectada', 0: 'Sin fuga' },
+  SOUND: { 1: 'Sonido detectado', 0: 'Silencioso' },
+  MOTION: { 1: 'Movimiento detectado', 0: 'Sin movimiento' },
 };
+
+function getReadingLabel(sensorType: string, value: string) {
+  const normalized = Number(value);
+  const labels = READING_VALUE_LABELS[sensorType];
+  if (labels && (normalized === 0 || normalized === 1)) return labels[String(normalized)] ?? value;
+  return value;
+}
+
+function getBatteryIcon(level?: number | null) {
+  if (level == null) return null;
+  if (level >= 76) return { name: 'battery-full', color: '#1D9E75' };
+  if (level >= 51) return { name: 'battery-half', color: '#1D9E75' };
+  if (level >= 26) return { name: 'battery-half', color: '#EF9F27' };
+  return { name: 'battery-dead', color: '#dc3545' };
+}
+
+function getHouseConnectionState(lastOnlineAt?: string | null) {
+  if (!lastOnlineAt) return false;
+
+  const lastOnlineTime = new Date(lastOnlineAt).getTime();
+  if (Number.isNaN(lastOnlineTime)) return false;
+
+  return Date.now() - lastOnlineTime < 10 * 60 * 1000;
+}
 
 const AVATAR_COLORS = ['#1D9E75', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444'];
 function avatarColor(name: string) {
@@ -63,6 +94,7 @@ export default function HouseDetailsScreen() {
   const [house, setHouse] = useState<House | null>(null);
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [latestReadings, setLatestReadings] = useState<Record<string, SensorReading | null>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -87,9 +119,47 @@ export default function HouseDetailsScreen() {
     }
   }, [id]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData]),
+  );
+
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!id || sensors.length === 0) return;
+
+    let mounted = true;
+
+    const fetchLatestForSensors = async () => {
+      try {
+        const promises = sensors.map(async (s) => {
+          try {
+            const data = await houseService.getSensorMetrics(id, s.id);
+            const readings = data.readings || [];
+            if (!readings.length) return { id: s.id, latest: null };
+            const latest = readings.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+            return { id: s.id, latest };
+          } catch (e) {
+            return { id: s.id, latest: null };
+          }
+        });
+
+        const results = await Promise.all(promises);
+        if (!mounted) return;
+        const map: Record<string, SensorReading | null> = {};
+        for (const r of results) map[r.id] = r.latest;
+        setLatestReadings(map);
+      } catch (err) {
+        console.error('Error al cargar últimas lecturas', err);
+      }
+    };
+
+    fetchLatestForSensors();
+
+    return () => {
+      mounted = false;
+    };
+  }, [sensors, id]);
 
   if (loading) {
     return (
@@ -115,6 +185,8 @@ export default function HouseDetailsScreen() {
       </View>
     );
   }
+
+  const houseIsOnline = getHouseConnectionState(house?.lastOnlineAt);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -161,55 +233,87 @@ export default function HouseDetailsScreen() {
           </Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sensorsScroll} contentContainerStyle={styles.sensorsGrid}>
-          {sensors.map((sensor) => {
-            const statusColor = STATUS_COLOR[sensor.status] ?? '#666';
+          {(() => {
+          const sortedSensors = [...sensors].filter((s) => s.status !== 'PENDING').sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0));
+          const BANNER_HEIGHT = 78;
+
+          return (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sensorsScroll} contentContainerStyle={styles.sensorsGrid}>
+              {sortedSensors.map((sensor) => {
+            const isOnline = houseIsOnline ? Boolean(sensor.online) : false;
+            const onlineColor = isOnline ? ONLINE_COLOR : OFFLINE_COLOR;
+            const battery = getBatteryIcon(sensor.batteryLevel);
             return (
               <BaseCard
                 key={sensor.id}
                 style={styles.sensorCard}
                 onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/sensors/${sensor.id}`)}
-                bannerColor="#1D9E75"
-                bannerHeight={70}
-                cardOpacity={sensor.status === 'REJECTED' ? 0.5 : sensor.status === 'PENDING' ? 0.75 : 1}
-                bannerContent={
-                  <Ionicons name={SENSOR_IONICONS[sensor.type] as any ?? 'thermometer-outline'} size={28} color="rgba(255,255,255,0.9)" />
-                }
+                bannerColor={SENSOR_TYPE_COLORS[sensor.type] ?? '#1D9E75'}
+                bannerHeight={BANNER_HEIGHT}
+                bannerContent={<Ionicons name={SENSOR_IONICONS[sensor.type] as any ?? 'thermometer-outline'} size={28} color="rgba(255,255,255,0.9)" />}
                 bodyContent={
                   <>
                     <RNText style={styles.sensorName} numberOfLines={1}>{sensor.name}</RNText>
-                    {sensor.location ? (
-                      <View style={styles.sensorRow}>
-                        <Ionicons name="location-outline" size={11} color="#999" />
-                        <RNText style={styles.sensorLocation} numberOfLines={1}>{sensor.location}</RNText>
+                    <RNText style={styles.sensorId} numberOfLines={1}>ID: {sensor.hardwareId ?? sensor.id}</RNText>
+                    <View style={styles.sensorMetaList}>
+                      <View style={styles.sensorMetaRow}>
+                        <Ionicons name={isOnline ? 'wifi' : 'wifi-outline'} size={12} color={onlineColor} />
+                        <RNText style={[styles.sensorMetaText, { color: onlineColor }]}>
+                          {isOnline ? 'En línea' : 'Sin conexión'}
+                        </RNText>
+                        {battery ? (
+                          <>
+                            <View style={{ width: 8 }} />
+                            <Ionicons name={battery.name as any} size={12} color={isOnline ? battery.color : OFFLINE_COLOR} />
+                            <RNText style={[styles.sensorMetaText, { color: isOnline ? battery.color : OFFLINE_COLOR }]}>
+                              {sensor.batteryLevel}%
+                            </RNText>
+                          </>
+                        ) : null}
                       </View>
-                    ) : null}
-                    <RNText style={styles.sensorHwId} numberOfLines={1}>{sensor.hardwareId}</RNText>
+                      {sensor.location ? (
+                        <View style={styles.sensorMetaRow}>
+                          <Ionicons name="location-outline" size={12} color="#6B7280" />
+                          <RNText style={styles.sensorMetaText} numberOfLines={1}>{sensor.location}</RNText>
+                        </View>
+                      ) : null}
+                    </View>
                   </>
                 }
                 footerContent={
                   <>
-                    <View style={styles.sensorStatusRow}>
-                      <Ionicons name={STATUS_ICON[sensor.status] as any ?? 'ellipse'} size={8} color={statusColor} />
-                      <RNText style={[styles.sensorStatusText, { color: statusColor }]}>
-                        {SENSOR_STATUS_LABELS[sensor.status]}
-                      </RNText>
-                    </View>
-                    <View style={styles.sensorBadge}>
-                      <RNText style={styles.sensorBadgeText}>{SENSOR_TYPE_LABELS[sensor.type]}</RNText>
-                    </View>
-                    <Ionicons name="chevron-forward" size={11} color="#bbb" />
+                        <View style={styles.sensorFooterRow}>
+                          {(() => {
+                            const latest = latestReadings[sensor.id];
+                            const hasLatestKey = Object.prototype.hasOwnProperty.call(latestReadings, sensor.id);
+                            if (!hasLatestKey) return null;
+                            const label = latest ? getReadingLabel(sensor.type, latest.value) : SENSOR_STATUS_LABELS[sensor.status];
+                            const valueKey = latest ? String(latest.value) : undefined;
+                            const color = latest ? (VALUE_COLORS[valueKey ?? '1'] ?? '#e67e22') : (SENSOR_STATUS_COLORS[sensor.status] ?? '#6c757d');
+                            const bg = color + '20';
+                            const displayLabel = latest ? String(label).toUpperCase() : label;
+                            return (
+                              <View style={[styles.sensorStatusBadge, { backgroundColor: bg }]}>
+                                <RNText style={[styles.sensorStatusText, { color }]}>{displayLabel}</RNText>
+                              </View>
+                            );
+                          })()}
+
+                          <Ionicons name="chevron-forward" size={11} color="#bbb" style={{ marginLeft: 'auto' }} />
+                        </View>
                   </>
                 }
               />
             );
-          })}
+              })}
           <AddCard
             icon="add-circle-outline"
             label={`Agregar\nsensor`}
             onPress={() => router.push(`/(protected)/(tabs)/houses/${id}/sensors/new`)}
           />
-        </ScrollView>
+            </ScrollView>
+          );
+        })()}
 
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -319,57 +423,68 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   sensorsScroll: {
-    height: 180,
+    height: 200,
   },
   sensorsGrid: {
     paddingHorizontal: 12,
     paddingVertical: 4,
     gap: 12,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
   },
   sensorCard: {
-    width: 200,
+    width: 210,
+    alignSelf: 'stretch',
   },
   sensorName: {
     fontSize: 14,
     fontWeight: '700',
     color: '#222',
   },
-  sensorRow: {
+  sensorMetaList: {
+    gap: 6,
+  },
+  sensorMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
-  sensorLocation: {
+  sensorMetaText: {
     fontSize: 12,
-    color: '#666',
-  },
-  sensorHwId: {
-    fontSize: 11,
-    color: '#bbb',
-    fontFamily: 'monospace',
-  },
-  sensorStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flex: 1,
-  },
-  sensorStatusText: {
-    fontSize: 11,
-    fontWeight: '500',
+    color: '#6B7280',
+    flexShrink: 1,
   },
   sensorBadge: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   sensorBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  sensorStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  sensorStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  sensorFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+    width: '100%',
+  },
+  sensorId: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 4,
+    marginBottom: 2,
   },
   membersScroll: {
     height: 200,

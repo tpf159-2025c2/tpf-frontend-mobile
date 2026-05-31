@@ -99,7 +99,7 @@ export default function EditHouseScreen() {
             onChangeText={setAddress}
             mode="outlined"
             autoCapitalize="characters"
-            disabled={saving}
+            disabled
             style={styles.input}
           />
 
