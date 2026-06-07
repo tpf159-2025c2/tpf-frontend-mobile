@@ -122,7 +122,21 @@ class AuthService {
     await AsyncStorage.setItem(USER_ID_KEY, userId);
   }
 
+  private refreshPromise: Promise<string> | null = null;
+
   async refresh(): Promise<string> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = this.doRefresh().finally(() => {
+      this.refreshPromise = null;
+    });
+
+    return this.refreshPromise;
+  }
+
+  private async doRefresh(): Promise<string> {
     const refreshToken = await this.getRefreshToken();
     if (!refreshToken) {
       throw new Error("No hay refresh token");
