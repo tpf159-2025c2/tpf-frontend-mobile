@@ -234,7 +234,7 @@ export default function HouseDetailsScreen() {
         </View>
 
           {(() => {
-          const sortedSensors = [...sensors].filter((s) => s.status !== 'PENDING').sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0));
+          const sortedSensors = [...sensors].filter((s) => s.status === 'ACCEPTED').sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0));
           const BANNER_HEIGHT = 78;
 
           return (
@@ -254,7 +254,6 @@ export default function HouseDetailsScreen() {
                 bodyContent={
                   <>
                     <RNText style={styles.sensorName} numberOfLines={1}>{sensor.name}</RNText>
-                    <RNText style={styles.sensorId} numberOfLines={1}>ID: {sensor.hardwareId ?? sensor.id}</RNText>
                     <View style={styles.sensorMetaList}>
                       <View style={styles.sensorMetaRow}>
                         <Ionicons name={isOnline ? 'wifi' : 'wifi-outline'} size={12} color={onlineColor} />
@@ -271,12 +270,14 @@ export default function HouseDetailsScreen() {
                           </>
                         ) : null}
                       </View>
-                      {sensor.location ? (
-                        <View style={styles.sensorMetaRow}>
-                          <Ionicons name="location-outline" size={12} color="#6B7280" />
-                          <RNText style={styles.sensorMetaText} numberOfLines={1}>{sensor.location}</RNText>
-                        </View>
-                      ) : null}
+                      <View style={styles.sensorMetaRow}>
+                        {sensor.location ? (
+                          <>
+                            <Ionicons name="location-outline" size={12} color="#6B7280" />
+                            <RNText style={styles.sensorMetaText} numberOfLines={1}>{sensor.location}</RNText>
+                          </>
+                        ) : null}
+                      </View>
                     </View>
                   </>
                 }
@@ -291,7 +292,7 @@ export default function HouseDetailsScreen() {
                             const valueKey = latest ? String(latest.value) : undefined;
                             const color = latest ? (VALUE_COLORS[valueKey ?? '1'] ?? '#e67e22') : (SENSOR_STATUS_COLORS[sensor.status] ?? '#6c757d');
                             const bg = color + '20';
-                            const displayLabel = latest ? String(label).toUpperCase() : label;
+                            const displayLabel = label;
                             return (
                               <View style={[styles.sensorStatusBadge, { backgroundColor: bg }]}>
                                 <RNText style={[styles.sensorStatusText, { color }]}>{displayLabel}</RNText>
@@ -448,6 +449,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    minHeight: 16,
   },
   sensorMetaText: {
     fontSize: 12,
@@ -464,14 +466,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   sensorStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 20,
     marginRight: 8,
   },
   sensorStatusText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '600',
   },
   sensorFooterRow: {
     flexDirection: 'row',
@@ -479,12 +481,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flex: 1,
     width: '100%',
-  },
-  sensorId: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 4,
-    marginBottom: 2,
   },
   membersScroll: {
     height: 200,
