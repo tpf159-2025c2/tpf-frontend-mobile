@@ -155,11 +155,11 @@ class AuthService {
       throw new Error(error.message || "Error al refrescar token");
     }
 
-    const data = await response.json();
-    await this.setAccessToken(data.accessToken);
-    await this.setRefreshToken(data.refreshToken);
+    const data: AuthResponse = await response.json();
+    await this.setAccessToken(data.tokens.accessToken);
+    await this.setRefreshToken(data.tokens.refreshToken);
 
-    return data.accessToken;
+    return data.tokens.accessToken;
   }
 
   async fetchWithAuth(
